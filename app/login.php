@@ -1,8 +1,16 @@
 <?php
-require 'db.php';
+require_once 'utils/db.php';
 $error = '';
 
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die("Erreur de sécurité : Jeton CSRF invalide.");
+    }
+
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
@@ -56,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label for="password" class="form-label">Mot de passe</label>
                             <input type="password" class="form-control" id="password" name="password" required>
                         </div>
+                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                         <button type="submit" class="btn btn-primary w-100">Se connecter</button>
                     </form>
                     <div class="mt-3 text-center">

@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require_once 'utils/db.php';
 
 // Sécurisation : seul l'admin peut accéder à cette page
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {

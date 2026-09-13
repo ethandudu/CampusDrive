@@ -1,9 +1,13 @@
 <?php
-require 'db.php';
+require_once 'utils/db.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'delegue') {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'delegate') {
     header('Location: login.php');
     exit;
+}
+
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
 // Vérification du statut de la promotion
@@ -16,8 +20,12 @@ if ($promo['status'] === 'pending') {
 }
 
 $success = '';
+
 // Génération de l'invitation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die("Erreur de sécurité : Jeton CSRF invalide.");
+    }
     $invite_email = trim($_POST['invite_email']);
     $token = bin2hex(random_bytes(32));
 
@@ -35,6 +43,9 @@ $invitations = $stmt->fetchAll();
 
 // Validation ou refus d'un fichier
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die("Erreur de sécurité : Jeton CSRF invalide.");
+    }
     $file_id = (int) $_POST['file_id'];
     if ($_POST['file_action'] === 'approve') {
         $stmt = $pdo->prepare("UPDATE files SET status = 'approved' WHERE id = ? AND promotion_id = ?");
@@ -87,6 +98,7 @@ $pending_files = $stmt->fetchAll();
                             <label class="form-label">Email de l'étudiant</label>
                             <input type="email" class="form-control" name="invite_email" required>
                         </div>
+                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                         <button type="submit" class="btn btn-success w-100">Générer l'invitation</button>
                     </form>
                 </div>
@@ -150,6 +162,7 @@ $pending_files = $stmt->fetchAll();
                                                 <input type="hidden" name="file_id" value="<?= $pf['id'] ?>">
                                                 <button type="submit" name="file_action" value="approve" class="btn btn-sm btn-success">Valider</button>
                                                 <button type="submit" name="file_action" value="reject" class="btn btn-sm btn-danger">Refuser</button>
+                                                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                             </form>
                                         </td>
                                     </tr>

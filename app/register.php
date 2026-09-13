@@ -3,8 +3,12 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-require 'db.php';
-require 'dCaptcha/captcha.php';
+require_once 'utils/db.php';
+require_once 'dCaptcha/captcha.php';
+
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 $captcha = new Captcha();
 
@@ -35,6 +39,10 @@ if ($token) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die("Erreur de sécurité : Jeton CSRF invalide.");
+    }
+
     $email = trim($_POST['email']);
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
     $captcha_input = trim($_POST['captcha'] ?? '');
@@ -117,6 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <input type="text" class="form-control" name="captcha" required placeholder="Saisissez le code de l'image">
                         </div>
+                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                         <button type="submit" class="btn btn-primary w-100">S'inscrire</button>
                     </form>
                     <div class="mt-3 text-center">

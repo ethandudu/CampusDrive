@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require_once 'utils/db.php';
 if (!isset($_SESSION['user_id'])) { header('Location: login.php'); exit; }
 
 // Récupération des infos de l'utilisateur
