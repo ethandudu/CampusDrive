@@ -1,19 +1,24 @@
-CREATE TABLE promotions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    status ENUM('pending', 'active') DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     role ENUM('admin', 'delegate', 'student') NOT NULL DEFAULT 'student',
     promotion_id INT DEFAULT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (promotion_id) REFERENCES promotions(id) ON DELETE SET NULL
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE promotions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    status ENUM('pending', 'active') DEFAULT 'pending',
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+);
+
+ALTER TABLE users
+    ADD CONSTRAINT fk_users_promotion
+    FOREIGN KEY (promotion_id) REFERENCES promotions(id) ON DELETE SET NULL;
 
 CREATE TABLE invitations (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -52,6 +57,7 @@ CREATE TABLE logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     action VARCHAR(255) NOT NULL,
+    ip_address VARCHAR(45) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

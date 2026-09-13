@@ -1,5 +1,6 @@
 <?php
 require_once 'utils/db.php';
+require_once 'utils/session.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'delegate') {
     header('Location: login.php');
@@ -11,13 +12,12 @@ if (empty($_SESSION['csrf_token'])) {
 }
 
 // Vérification du statut de la promotion
-$stmt = $pdo->prepare("SELECT * FROM promotions WHERE id = ?");
-$stmt->execute([$_SESSION['promotion_id']]);
-$promo = $stmt->fetch();
-
-if ($promo['status'] === 'pending') {
-    die("<div style='padding:2rem;font-family:sans-serif;'>Votre espace <b>" . htmlspecialchars($promo['name']) . "</b> est en attente d'approbation. <br><br><a href='logout.php'>Se déconnecter</a></div>");
+if (Database::getPromotionStatus($_SESSION['promotion_id']) == 'pending') {
+    header('Location: settings.php?error=promotion_inactive');
+    exit;
 }
+
+$promo = Database::getPromotionDetails($_SESSION['promotion_id']);
 
 $success = '';
 
@@ -26,20 +26,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         die("Erreur de sécurité : Jeton CSRF invalide.");
     }
-    $invite_email = trim($_POST['invite_email']);
     $token = bin2hex(random_bytes(32));
 
-    $stmt = $pdo->prepare("INSERT INTO invitations (email, promotion_id, token) VALUES (?, ?, ?)");
-    $stmt->execute([$invite_email, $promo['id'], $token]);
-
-    $invite_link = "http://localhost:8080/inscription_etudiant.php?token=" . $token;
-    $success = "Invitation générée pour $invite_email.<br><b>Lien à transmettre :</b> <a href='$invite_link' target='_blank'>$invite_link</a>";
+    Database::createInvitation($_SESSION['promotion_id'], $_POST['invite_email'], $token);
 }
 
-// Récupération de l'historique des invitations
-$stmt = $pdo->prepare("SELECT * FROM invitations WHERE promotion_id = ? ORDER BY created_at DESC");
-$stmt->execute([$promo['id']]);
-$invitations = $stmt->fetchAll();
+// Création d'un dossier
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_folder') {
+    $folder_name = trim($_POST['folder_name']);
+    if (!empty($folder_name)) {
+        Database::createFolder($_SESSION['promotion_id'], $folder_name);
+    }
+}
+
+$invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
 
 // Validation ou refus d'un fichier
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
@@ -48,25 +48,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
     }
     $file_id = (int) $_POST['file_id'];
     if ($_POST['file_action'] === 'approve') {
-        $stmt = $pdo->prepare("UPDATE files SET status = 'approved' WHERE id = ? AND promotion_id = ?");
-        $stmt->execute([$file_id, $promo['id']]);
+        Database::approvePromotionFile($file_id);
     } elseif ($_POST['file_action'] === 'reject') {
         // Supprime le fichier en BDD et du disque
-        $stmt = $pdo->prepare("SELECT file_path FROM files WHERE id = ? AND promotion_id = ?");
-        $stmt->execute([$file_id, $promo['id']]);
-        $f = $stmt->fetch();
-        if ($f) {
-            @unlink(__DIR__ . '/uploads/' . $f['file_path']);
-            $stmt = $pdo->prepare("DELETE FROM files WHERE id = ?");
-            $stmt->execute([$file_id]);
-        }
+        Database::rejectPromotionFile($file_id);
     }
 }
 
-// Récupération des fichiers en attente d'approbation
-$stmt = $pdo->prepare("SELECT f.*, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.status = 'pending' ORDER BY f.created_at ASC");
-$stmt->execute([$promo['id']]);
-$pending_files = $stmt->fetchAll();
+$pending_files = Database::getPromotionPendingFiles($_SESSION['promotion_id']);
 
 ?>
 <!DOCTYPE html>
@@ -74,7 +63,7 @@ $pending_files = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <title>Espace Délégué - CampusDrive</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 <nav class="navbar navbar-dark bg-success mb-4 shadow">
@@ -100,6 +89,19 @@ $pending_files = $stmt->fetchAll();
                         </div>
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                         <button type="submit" class="btn btn-success w-100">Générer l'invitation</button>
+                    </form>
+                </div>
+            </div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white fw-bold">Créer un dossier</div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="action" value="create_folder">
+                        <div class="mb-3">
+                            <label class="form-label">Nom du dossier</label>
+                            <input type="text" class="form-control" name="folder_name" placeholder="Ex: Cours S1, TD, Annales..." required>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Créer le dossier</button>
                     </form>
                 </div>
             </div>

@@ -4,6 +4,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 require_once 'utils/db.php';
+require_once 'utils/session.php';
 require_once 'dCaptcha/captcha.php';
 
 if (empty($_SESSION['csrf_token'])) {
@@ -19,15 +20,13 @@ if (isset($_GET['ShowCaptcha'])) {
 }
 
 $message = ''; $error = '';
-$token = $_GET['token'] ?? '';
+$token = htmlspecialchars(trim($_GET['token'] ?? ''));
 $invited_email = '';
 $promo_id = null;
 
 // Si un token d'invitation est présent, on le vérifie
 if ($token) {
-    $stmt = $pdo->prepare("SELECT * FROM invitations WHERE token = ? AND is_used = 0");
-    $stmt->execute([$token]);
-    $invitation = $stmt->fetch();
+    $invitation = Database::getInvitationByToken($token);
 
     if ($invitation) {
         $invited_email = $invitation['email'];
@@ -43,9 +42,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die("Erreur de sécurité : Jeton CSRF invalide.");
     }
 
-    $email = trim($_POST['email']);
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-    $captcha_input = trim($_POST['captcha'] ?? '');
+    $email = htmlspecialchars(trim($_POST['email']));
+    $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
+    $captcha_input = htmlspecialchars(trim($_POST['captcha'] ?? ''));
 
     // Vérification du Captcha
     // Attention : Vérifie dans la doc dCaptcha le nom exact de la clé de session (souvent $_SESSION['captcha'] ou $_SESSION['dCaptcha'])
@@ -59,23 +58,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$error) {
         try {
-            $pdo->beginTransaction();
-            // Création de l'utilisateur (rôle 'etudiant' par défaut)
-            $stmt = $pdo->prepare("INSERT INTO users (email, password, role, promotion_id) VALUES (?, ?, 'etudiant', ?)");
-            $stmt->execute([$email, $password, $promo_id]);
-
-            // Marquer l'invitation comme utilisée
-            if ($token && $invitation) {
-                $stmt = $pdo->prepare("UPDATE invitations SET is_used = 1 WHERE id = ?");
-                $stmt->execute([$invitation['id']]);
+            if (Database::createUser($email, $password, $promo_id)) {
+                Database::markInvitationAsUsed($token);
+                header("Location: login.php?registered=1");
+                exit;
             }
-
-            $pdo->commit();
-            header("Location: login.php?registered=1");
-            exit;
-        } catch (\PDOException $e) {
-            $pdo->rollBack();
-            $error = "Cette adresse email est déjà utilisée.";
+        } catch (\InvalidArgumentException $e) {
+            $error = $e->getMessage();
         }
     }
 }
@@ -85,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Inscription - CampusDrive</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light d-flex align-items-center vh-100">
 <div class="container">

@@ -1,5 +1,6 @@
 <?php
 require_once 'utils/db.php';
+require_once 'utils/session.php';
 
 if (!isset($_SESSION['user_id'])) {
     die("Accès non autorisé.");
@@ -7,10 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 
 $file_id = (int) ($_GET['id'] ?? 0);
 
-// Récupération du fichier
-$stmt = $pdo->prepare("SELECT * FROM files WHERE id = ?");
-$stmt->execute([$file_id]);
-$file = $stmt->fetch();
+$file = Database::getFile($file_id);
 
 if (!$file) {
     die("Fichier introuvable.");

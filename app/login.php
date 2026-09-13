@@ -1,9 +1,15 @@
 <?php
 require_once 'utils/db.php';
+require_once 'utils/session.php';
+$message = '';
 $error = '';
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+if (isset($_GET['registered'])){
+    $message = "Inscription réussie ! Vous pouvez maintenant vous connecter.";
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -11,22 +17,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die("Erreur de sécurité : Jeton CSRF invalide.");
     }
 
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $user = Database::loginUser($_POST['email'], $_POST['password']);
 
-    $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ?');
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
-
-    if ($user && password_verify($password, $user['password'])) {
+    if ($user !== null) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['role'] = $user['role'];
         $_SESSION['promotion_id'] = $user['promotion_id'];
 
         if ($user['role'] === 'admin') {
             header('Location: admin.php');
-        } elseif ($user['role'] === 'delegate') {
-            header('Location: delegate.php');
         } else {
             header('Location: student.php');
         }
@@ -41,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Connexion - CampusDrive</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light d-flex align-items-center vh-100">
 <div class="container">
@@ -52,6 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h4 class="mb-0">CampusDrive</h4>
                 </div>
                 <div class="card-body p-4">
+                    <?php if ($message): ?>
+                        <div class="alert alert-success"><?= htmlspecialchars($message) ?></div>
+                    <?php endif; ?>
                     <?php if ($error): ?>
                         <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                     <?php endif; ?>

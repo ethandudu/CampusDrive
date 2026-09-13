@@ -39,8 +39,217 @@ class Database
         return self::$instance;
     }
 
-    private static function sanitizeInput(string $input): string
+    public static function getInvitationByToken(string $token): ?array
     {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT * FROM invitations WHERE token = ? AND is_used = 0");
+        $stmt->execute([self::sanitizeInput($token)]);
+        return $stmt->fetch() ?: null;
+    }
+
+    public static function createUser(string $email, string $password, ?int $promotion_id): bool
+    {
+        if (!self::validateEmail($email)) {
+            throw new InvalidArgumentException("Adresse email invalide.");
+        }
+
+        if (self::isEmailRegistered($email)) {
+            throw new InvalidArgumentException("Cette adresse email est déjà utilisée.");
+        }
+
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("INSERT INTO users (email, password, role, promotion_id) VALUES (?, ?, 'student', ?)");
+        return $stmt->execute([self::sanitizeInput($email), $password, self::sanitizeInput($promotion_id)]);
+    }
+
+    public static function getUserDetails(string $user_id): ?array
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT u.*, p.name as promo_name, p.status as promo_status FROM users u LEFT JOIN promotions p ON u.promotion_id = p.id WHERE u.id = ?");
+        $stmt->execute([self::sanitizeInput($user_id)]);
+        return $stmt->fetch() ?: null;
+    }
+
+    public static function createPromotion(string $name): int
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("INSERT INTO promotions (name, status, created_by) VALUES (?, 'pending', ?)");
+        $stmt->execute([self::sanitizeInput($name), $_SESSION['user_id']]);
+        return (int)$pdo->lastInsertId();
+    }
+
+    public static function updatePromotionStatus(int $promotion_id, string $status): bool
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("UPDATE promotions SET status = ? WHERE id = ?");
+        return $stmt->execute([self::sanitizeInput($status), $promotion_id]);
+    }
+
+    public static function getPromotionStatus(int $promotion_id): ?string
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT status FROM promotions WHERE id = ?");
+        $stmt->execute([self::sanitizeInput($promotion_id)]);
+        $result = $stmt->fetch();
+        return $result ? $result['status'] : null;
+    }
+
+    public static function getPromotionDetails(int $promotion_id): ?array
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT * FROM promotions WHERE id = ?");
+        $stmt->execute([$promotion_id]);
+        return $stmt->fetch() ?: null;
+    }
+
+    public static function getPendingPromotions(): array
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->query("SELECT * FROM promotions WHERE status = 'pending' ORDER BY created_at DESC");
+        return $stmt->fetchAll();
+    }
+
+    public static function attachUserToPromotion(int $user_id, int $promotion_id): bool
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("UPDATE users SET promotion_id = ? WHERE id = ?");
+        return $stmt->execute([self::sanitizeInput($promotion_id), $user_id]);
+    }
+
+    public static function createFileRecord(int $user_id, int $promotion_id, string $original_name, string $file_path, string $file_type): bool
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("INSERT INTO files (user_id, promotion_id, original_name, file_path, file_type, status) VALUES (?, ?, ?, ?, ?, 'pending')");
+        return $stmt->execute([
+            $user_id,
+            $promotion_id,
+            $original_name,
+            $file_path,
+            $file_type
+        ]);
+    }
+
+    public static function markInvitationAsUsed(string $token): bool
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("UPDATE invitations SET is_used = 1 WHERE token = ?");
+        return $stmt->execute([self::sanitizeInput($token)]);
+    }
+
+    public static function loginUser(string $email, string $password): ?array
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([self::sanitizeInput($email)]);
+        $user = $stmt->fetch();
+
+        if ($user && password_verify(self::sanitizeInput($password), $user['password'])) {
+            return $user;
+        }
+
+        return null;
+    }
+
+    public static function getPromotionFiles(int $promotion_id): array
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT f.*, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.status = 'approved' ORDER BY f.created_at DESC");
+        $stmt->execute([self::sanitizeInput($promotion_id)]);
+        return $stmt->fetchAll();
+    }
+
+    public static function getUserPendingFiles(int $user_id): array
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT * FROM files WHERE user_id = ? AND status = 'pending' ORDER BY created_at DESC");
+        $stmt->execute([self::sanitizeInput($user_id)]);
+        return $stmt->fetchAll();
+    }
+
+    public static function getPromotionPendingFiles(int $promotion_id): array
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT f.*, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.status = 'pending' ORDER BY f.created_at ASC");
+        $stmt->execute([$promotion_id]);
+        return $stmt->fetchAll();
+    }
+
+    public static function approvePromotionFile(int $file_id): bool
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("UPDATE files SET status = 'approved' WHERE id = ?");
+        return $stmt->execute([self::sanitizeInput($file_id)]);
+    }
+
+    public static function rejectPromotionFile(int $file_id): bool
+    {
+        @unlink(__DIR__ . '/uploads/' . self::getConnection()->prepare("SELECT file_path FROM files WHERE id = ?")->execute([self::sanitizeInput($file_id)]));
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("DELETE FROM files WHERE id = ?");
+        return $stmt->execute([self::sanitizeInput($file_id)]);
+    }
+
+    public static function getPromotionFolders(int $promotion_id): array
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT * FROM folders WHERE promotion_id = ? ORDER BY created_at DESC");
+        $stmt->execute([$promotion_id]);
+        return $stmt->fetchAll();
+    }
+
+    public static function getFile(int $file_id): ?array
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT * FROM files WHERE id = ?");
+        $stmt->execute([self::sanitizeInput($file_id)]);
+        return $stmt->fetch() ?: null;
+    }
+
+    public static function createInvitation(string $email, int $promotion_id, string $token): bool
+    {
+        if (!self::validateEmail($email)) {
+            throw new InvalidArgumentException("Adresse email invalide.");
+        }
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("INSERT INTO invitations (email, promotion_id, token) VALUES (?, ?, ?)");
+        return $stmt->execute([self::sanitizeInput($email), $promotion_id, self::sanitizeInput($token)]);
+    }
+
+    public static function getPromotionInvitations(int $promotion_id): array
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT * FROM invitations WHERE promotion_id = ? ORDER BY created_at DESC");
+        $stmt->execute([$promotion_id]);
+        return $stmt->fetchAll();
+    }
+
+    public static function createFolder(int $promotion_id, string $folder_name): bool
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("INSERT INTO folders (promotion_id, name) VALUES (?, ?)");
+        return $stmt->execute([$promotion_id, self::sanitizeInput($folder_name)]);
+    }
+
+    private static function isEmailRegistered(string $email): bool
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE email = ?");
+        $stmt->execute([self::sanitizeInput($email)]);
+        return $stmt->fetchColumn() > 0;
+    }
+
+    private static function insertLog(string $action, ?int $userId = null): void
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("INSERT INTO logs (action, user_id, created_at, ip_address) VALUES (?, ?, NOW(), ?)");
+        $stmt->execute([self::sanitizeInput($action), $userId, self::sanitizeInput($_SERVER['REMOTE_ADDR'])]);
+    }
+
+    private static function sanitizeInput(?string $input): ?string
+    {
+        if (empty($input)) {
+            return null;
+        }
         return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
     }
 

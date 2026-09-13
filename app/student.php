@@ -1,5 +1,6 @@
 <?php
 require_once 'utils/db.php';
+require_once 'utils/session.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -14,6 +15,11 @@ if (!$_SESSION['promotion_id']) {
 $user_id = $_SESSION['user_id'];
 $promo_id = $_SESSION['promotion_id'];
 $message = ''; $error = '';
+
+if (Database::getPromotionStatus($promo_id) == 'pending') {
+    header('Location: settings.php?error=promotion_inactive');
+    exit;
+}
 
 // Traitement de l'upload
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
@@ -45,8 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
             $destination = $upload_dir . $stored_name;
 
             if (move_uploaded_file($file['tmp_name'], $destination)) {
-                $stmt = $pdo->prepare("INSERT INTO files (user_id, promotion_id, original_name, file_path, file_type, status) VALUES (?, ?, ?, ?, ?, 'pending')");
-                $stmt->execute([$user_id, $promo_id, $file['name'], $stored_name, $mime_type]);
+                Database::createFileRecord($user_id, $promo_id, $file['name'], $stored_name, $mime_type);
                 $message = "Fichier envoyé avec succès ! Il sera visible une fois validé par votre délégué.";
             } else {
                 $error = "Erreur lors de l'enregistrement du fichier sur le serveur.";
@@ -60,21 +65,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
 }
 
 // Récupération des fichiers approuvés de la promotion
-$stmt = $pdo->prepare("SELECT f.*, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.status = 'approved' ORDER BY f.created_at DESC");
-$stmt->execute([$promo_id]);
-$approved_files = $stmt->fetchAll();
+$approved_files = Database::getPromotionFiles($promo_id);
 
 // Récupération des fichiers en attente de l'utilisateur connecté
-$stmt = $pdo->prepare("SELECT * FROM files WHERE user_id = ? AND status = 'pending' ORDER BY created_at DESC");
-$stmt->execute([$user_id]);
-$my_pending_files = $stmt->fetchAll();
+$my_pending_files = Database::getUserPendingFiles($user_id);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <title>Espace Étudiant - CampusDrive</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 <nav class="navbar navbar-dark bg-primary mb-4 shadow">
@@ -101,7 +102,7 @@ $my_pending_files = $stmt->fetchAll();
                         <div class="mb-3">
                             <label class="form-label">Sélectionner un fichier</label>
                             <input type="file" class="form-control" name="file_upload" required>
-                            <div class="form-text">Formats : PDF, Images, Vidéos (max 100 Mo).</div>
+                            <div class="form-text">Formats : PDF, Images, Vidéos (max 10 Mo).</div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Envoyer pour validation</button>
                     </form>

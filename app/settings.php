@@ -1,13 +1,23 @@
 <?php
 require_once 'utils/db.php';
+require_once 'utils/session.php';
+
 if (!isset($_SESSION['user_id'])) { header('Location: login.php'); exit; }
 
-// Récupération des infos de l'utilisateur
-$stmt = $pdo->prepare("SELECT u.*, p.name as promo_name, p.status as promo_status FROM users u LEFT JOIN promotions p ON u.promotion_id = p.id WHERE u.id = ?");
-$stmt->execute([$_SESSION['user_id']]);
-$user = $stmt->fetch();
-
 $success = ''; $error = '';
+if (isset($_GET['error'])) {
+    if ($_GET['error'] === 'promotion_inactive') {
+        $error = "Votre espace de promotion n'est pas encore validé par l'administration.";
+    } else {
+        $error = "Une erreur est survenue.";
+    }
+} elseif (isset($_GET['success'])) {
+    if ($_GET['success'] === 'promo_created') {
+        $success = "Demande envoyée ! Dès validation par l'admin, vous deviendrez le délégué de cet espace.";
+    }
+}
+
+$user = Database::getUserDetails($_SESSION['user_id']);
 
 // Traitement de la demande de promotion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'request_promo') {
@@ -16,22 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     } else {
         $promo_name = trim($_POST['promo_name']);
         try {
-            $pdo->beginTransaction();
-            // Créer la promotion en attente
-            $stmt = $pdo->prepare("INSERT INTO promotions (name, status) VALUES (?, 'pending')");
-            $stmt->execute([$promo_name]);
-            $new_promo_id = $pdo->lastInsertId();
-
-            // Attacher l'étudiant à cette promotion
-            $stmt = $pdo->prepare("UPDATE users SET promotion_id = ? WHERE id = ?");
-            $stmt->execute([$new_promo_id, $user['id']]);
-            $pdo->commit();
+            $new_promo_id = Database::createPromotion($promo_name);
+            Database::attachUserToPromotion($user['id'], $new_promo_id);
 
             $_SESSION['promotion_id'] = $new_promo_id;
             $success = "Demande envoyée ! Dès validation par l'admin, vous deviendrez le délégué de cet espace.";
-            header("Refresh: 3"); // Rafraîchit la page pour voir le nouveau statut
+            header("Location: settings.php?success=promo_created");
+            exit;
         } catch (\Exception $e) {
-            $pdo->rollBack();
             $error = "Erreur lors de la demande.";
         }
     }
@@ -42,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 <head>
     <meta charset="UTF-8">
     <title>Paramètres - CampusDrive</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 <nav class="navbar navbar-dark bg-secondary mb-4 shadow">
@@ -62,6 +64,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-8">
+            <?php if($error): ?>
+                <div class="alert alert-danger"><?= $error ?></div>
+            <?php endif; ?>
+            <?php if($success): ?>
+                <div class="alert alert-success"><?= $success ?></div>
+            <?php endif; ?>
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white fw-bold">Mon Compte (<?= htmlspecialchars($user['email']) ?>)</div>
                 <div class="card-body">
