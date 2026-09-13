@@ -9,7 +9,7 @@ CREATE TABLE users (
                        id INT AUTO_INCREMENT PRIMARY KEY,
                        email VARCHAR(255) UNIQUE NOT NULL,
                        password VARCHAR(255) NOT NULL,
-                       role ENUM('admin', 'delegue', 'etudiant') NOT NULL,
+                       role ENUM('admin', 'delegate', 'etudiant') NOT NULL,
                        promotion_id INT DEFAULT NULL,
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                        FOREIGN KEY (promotion_id) REFERENCES promotions(id) ON DELETE SET NULL
@@ -38,7 +38,13 @@ CREATE TABLE files (
                        FOREIGN KEY (promotion_id) REFERENCES promotions(id) ON DELETE CASCADE
 );
 
--- Création d'un premier compte Administrateur par défaut
--- L'email est "admin@campusdrive.com" et le mot de passe est "password" (haché via bcrypt)
+CREATE TABLE logs (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id INT NOT NULL,
+                        action VARCHAR(255) NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 INSERT INTO users (email, password, role)
 VALUES ('admin@campusdrive.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
