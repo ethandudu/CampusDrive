@@ -158,6 +158,14 @@ class Database
         return $stmt->fetchAll();
     }
 
+    public static function getPromotionFolders(int $promotion_id): array
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT * FROM folders WHERE promotion_id = ? ORDER BY created_at DESC");
+        $stmt->execute([self::sanitizeInput($promotion_id)]);
+        return $stmt->fetchAll();
+    }
+
     public static function getUserPendingFiles(int $user_id): array
     {
         $pdo = self::getConnection();
@@ -187,14 +195,6 @@ class Database
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("DELETE FROM files WHERE id = ?");
         return $stmt->execute([self::sanitizeInput($file_id)]);
-    }
-
-    public static function getPromotionFolders(int $promotion_id): array
-    {
-        $pdo = self::getConnection();
-        $stmt = $pdo->prepare("SELECT * FROM folders WHERE promotion_id = ? ORDER BY created_at DESC");
-        $stmt->execute([$promotion_id]);
-        return $stmt->fetchAll();
     }
 
     public static function getFile(int $file_id): ?array
