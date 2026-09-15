@@ -11,7 +11,6 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// Vérification du statut de la promotion
 if (Database::getPromotionStatus($_SESSION['promotion_id']) == 'pending') {
     header('Location: settings.php?error=promotion_inactive');
     exit;
@@ -21,7 +20,15 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
 
 $success = '';
 
-// Génération de l'invitation
+if (isset($_GET['folderId'])) {
+    $folderId = (int) $_GET['folderId'];
+    $folderDetails = Database::getPromotionFolderFiles($folderId);
+
+    header('Content-Type: application/json');
+    echo json_encode($folderDetails);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         die("Erreur de sécurité : Jeton CSRF invalide.");
@@ -92,19 +99,19 @@ $pending_files = Database::getPromotionPendingFiles($_SESSION['promotion_id']);
                     </form>
                 </div>
             </div>
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white fw-bold">Créer un dossier</div>
-                <div class="card-body">
-                    <form method="POST">
-                        <input type="hidden" name="action" value="create_folder">
-                        <div class="mb-3">
-                            <label class="form-label">Nom du dossier</label>
-                            <input type="text" class="form-control" name="folder_name" placeholder="Ex: Cours S1, TD, Annales..." required>
-                        </div>
-                        <button type="submit" class="btn btn-success w-100">Créer le dossier</button>
-                    </form>
-                </div>
-            </div>
+<!--            <div class="card shadow-sm mb-4">-->
+<!--                <div class="card-header bg-white fw-bold">Créer un dossier</div>-->
+<!--                <div class="card-body">-->
+<!--                    <form method="POST">-->
+<!--                        <input type="hidden" name="action" value="create_folder">-->
+<!--                        <div class="mb-3">-->
+<!--                            <label class="form-label">Nom du dossier</label>-->
+<!--                            <input type="text" class="form-control" name="folder_name" placeholder="Ex: Cours S1, TD, Annales..." required>-->
+<!--                        </div>-->
+<!--                        <button type="submit" class="btn btn-success w-100">Créer le dossier</button>-->
+<!--                    </form>-->
+<!--                </div>-->
+<!--            </div>-->
         </div>
 
         <div class="col-md-8">
@@ -137,46 +144,130 @@ $pending_files = Database::getPromotionPendingFiles($_SESSION['promotion_id']);
                     <?php endif; ?>
                     </tbody>
                 </table>
-                <div class="card shadow-sm mt-4">
-                    <div class="card-header bg-white fw-bold">Fichiers en attente de validation</div>
-                    <div class="card-body p-0">
-                        <?php if (empty($pending_files)): ?>
-                            <p class="text-muted p-3 mb-0">Aucun fichier en attente.</p>
-                        <?php else: ?>
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
+            </div>
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-white fw-bold">Fichiers en attente de validation</div>
+                <div class="card-body p-0">
+                    <?php if (empty($pending_files)): ?>
+                        <p class="text-muted p-3 mb-0">Aucun fichier en attente.</p>
+                    <?php else: ?>
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Fichier</th>
+                                <th>Auteur</th>
+                                <th>Action</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($pending_files as $pf): ?>
                                 <tr>
-                                    <th>Fichier</th>
-                                    <th>Auteur</th>
-                                    <th>Action</th>
+                                    <td class="align-middle">
+                                        <b><?= htmlspecialchars($pf['original_name']) ?></b>
+                                    </td>
+                                    <td class="align-middle"><?= htmlspecialchars($pf['uploader_email']) ?></td>
+                                    <td class="align-middle">
+                                        <a href="view.php?id=<?= $pf['id'] ?>" target="_blank" class="btn btn-sm btn-outline-info me-2">Aperçu</a>
+                                        <form method="POST" class="d-inline">
+                                            <input type="hidden" name="file_id" value="<?= $pf['id'] ?>">
+                                            <button type="submit" name="file_action" value="approve" class="btn btn-sm btn-success">Valider</button>
+                                            <button type="submit" name="file_action" value="reject" class="btn btn-sm btn-danger">Refuser</button>
+                                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                        </form>
+                                    </td>
                                 </tr>
-                                </thead>
-                                <tbody>
-                                <?php foreach ($pending_files as $pf): ?>
-                                    <tr>
-                                        <td class="align-middle">
-                                            <b><?= htmlspecialchars($pf['original_name']) ?></b>
-                                        </td>
-                                        <td class="align-middle"><?= htmlspecialchars($pf['uploader_email']) ?></td>
-                                        <td class="align-middle">
-                                            <a href="view.php?id=<?= $pf['id'] ?>" target="_blank" class="btn btn-sm btn-outline-info me-2">Aperçu</a>
-                                            <form method="POST" class="d-inline">
-                                                <input type="hidden" name="file_id" value="<?= $pf['id'] ?>">
-                                                <button type="submit" name="file_action" value="approve" class="btn btn-sm btn-success">Valider</button>
-                                                <button type="submit" name="file_action" value="reject" class="btn btn-sm btn-danger">Refuser</button>
-                                                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                                            </form>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        <?php endif; ?>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-white fw-bold">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Arborescence des dossiers</span>
+                        <button class="btn btn-sm btn-outline-success" onclick="openFolder(1)">Actualiser</button>
                     </div>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0" id="folderTable">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Nom</th>
+                            <th>Créé le</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
+<script>
+    function openFolder(folderId) {
+        fetch(`delegate.php?folderId=${folderId}`)
+            .then(response => response.json())
+            .then(data => {
+                const rows = [];
+                const currentFolder = data.folder;
+
+                if (currentFolder && currentFolder.parent_id !== null) {
+                    rows.push(`
+                        <tr>
+                            <td>
+                                <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="openFolder(${currentFolder.parent_id})">
+                                    📁.. / Retour
+                                </button>
+                            </td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    `);
+                }
+
+                if (data.folders && data.folders.length) {
+                    data.folders.forEach(folder => {
+                        rows.push(`
+                            <tr>
+                                <td>
+                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" onclick="openFolder(${folder.id})">
+                                        📁 ${folder.name}
+                                    </button>
+                                </td>
+                                <td>${folder.created_at ? new Date(folder.created_at).toLocaleString('fr-FR') : ''}</td>
+                                <td></td>
+                            </tr>
+                        `);
+                    });
+                }
+
+                if (data.files && data.files.length) {
+                    data.files.forEach(file => {
+                        rows.push(`
+                            <tr>
+                                <td>📄 ${file.original_name}</td>
+                                <td>${file.created_at ? new Date(file.created_at).toLocaleString('fr-FR') : ''}</td>
+                                <td><a href="view.php?id=${file.id}" target="_blank" class="btn btn-sm btn-outline-info">Voir</a></td>
+                            </tr>
+                        `);
+                    });
+                }
+
+                if (!rows.length) {
+                    rows.push('<tr><td colspan="3" class="text-center text-muted py-3">Aucun fichier ni dossier dans cet emplacement.</td></tr>');
+                }
+
+                document.querySelector('#folderTable tbody').innerHTML = rows.join('');
+            })
+            .catch(error => console.error('Erreur:', error));
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        openFolder(1);
+    });
+</script>
 </body>
 </html>

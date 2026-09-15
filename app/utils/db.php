@@ -166,6 +166,40 @@ class Database
         return $stmt->fetchAll();
     }
 
+    public static function getPromotionFolderFiles(int $folder_id): array
+    {
+        $pdo = self::getConnection();
+        $folderStmt = $pdo->prepare("SELECT id, parent_id, promotion_id, name, created_at FROM folders WHERE id = ?");
+        $folderStmt->execute([self::sanitizeInput($folder_id)]);
+        $folder = $folderStmt->fetch();
+
+        if (!$folder) {
+            return ['folder' => null, 'parent_folder' => null, 'folders' => [], 'files' => []];
+        }
+
+        $childrenStmt = $pdo->prepare("SELECT id, parent_id, promotion_id, name, created_at FROM folders WHERE parent_id = ? ORDER BY name ASC");
+        $childrenStmt->execute([self::sanitizeInput($folder_id)]);
+        $subfolders = $childrenStmt->fetchAll();
+
+        $filesStmt = $pdo->prepare("SELECT f.id, f.created_at, f.folder_id, f.original_name, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.folder_id = ? AND f.status = 'approved' ORDER BY f.created_at DESC");
+        $filesStmt->execute([self::sanitizeInput($folder_id)]);
+        $files = $filesStmt->fetchAll();
+
+        $parentFolder = null;
+        if (!empty($folder['parent_id'])) {
+            $parentStmt = $pdo->prepare("SELECT id, parent_id, promotion_id, name, created_at FROM folders WHERE id = ?");
+            $parentStmt->execute([self::sanitizeInput($folder['parent_id'])]);
+            $parentFolder = $parentStmt->fetch() ?: null;
+        }
+
+        return [
+            'folder' => $folder,
+            'parent_folder' => $parentFolder,
+            'folders' => $subfolders,
+            'files' => $files
+        ];
+    }
+
     public static function getUserPendingFiles(int $user_id): array
     {
         $pdo = self::getConnection();
