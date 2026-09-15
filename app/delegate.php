@@ -16,19 +16,20 @@ if (Database::getPromotionStatus($_SESSION['promotion_id']) == 'pending') {
     exit;
 }
 
-$promo = Database::getPromotionDetails($_SESSION['promotion_id']);
-
 $success = '';
 
 if (isset($_GET['folderId'])) {
-    $folderId = (int) $_GET['folderId'];
-    $folderDetails = Database::getPromotionFolderFiles($folderId);
+    $folderId = isset($_GET['folderId']) && $_GET['folderId'] !== 'null' && $_GET['folderId'] !== ''
+        ? (int) $_GET['folderId']
+        : null;
+    $folderDetails = Database::getPromotionFolderFiles($folderId, (int) $_SESSION['promotion_id']);
 
     header('Content-Type: application/json');
     echo json_encode($folderDetails);
     exit;
 }
 
+// Handle invitation generation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         die("Erreur de sécurité : Jeton CSRF invalide.");
@@ -38,17 +39,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
     Database::createInvitation($_SESSION['promotion_id'], $_POST['invite_email'], $token);
 }
 
-// Création d'un dossier
+// Create new folder
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_folder') {
     $folder_name = trim($_POST['folder_name']);
     if (!empty($folder_name)) {
-        Database::createFolder($_SESSION['promotion_id'], $folder_name);
+        Database::createFolder($_SESSION['promotion_id'], $_POST['parent_id'], $folder_name);
     }
+}
+
+// Delete folder
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_folder') {
+    $folder_id = (int) $_POST['element_id'];
+    Database::deletePromotionFolder($folder_id);
+}
+
+// Delete file
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_file') {
+    $file_id = (int) $_POST['element_id'];
+    Database::rejectPromotionFile($file_id);
 }
 
 $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
 
-// Validation ou refus d'un fichier
+// Validation or rejection of files
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         die("Erreur de sécurité : Jeton CSRF invalide.");
@@ -57,12 +70,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
     if ($_POST['file_action'] === 'approve') {
         Database::approvePromotionFile($file_id);
     } elseif ($_POST['file_action'] === 'reject') {
-        // Supprime le fichier en BDD et du disque
         Database::rejectPromotionFile($file_id);
     }
 }
 
 $pending_files = Database::getPromotionPendingFiles($_SESSION['promotion_id']);
+$promo = Database::getPromotionDetails($_SESSION['promotion_id']);
 
 ?>
 <!DOCTYPE html>
@@ -99,21 +112,7 @@ $pending_files = Database::getPromotionPendingFiles($_SESSION['promotion_id']);
                     </form>
                 </div>
             </div>
-<!--            <div class="card shadow-sm mb-4">-->
-<!--                <div class="card-header bg-white fw-bold">Créer un dossier</div>-->
-<!--                <div class="card-body">-->
-<!--                    <form method="POST">-->
-<!--                        <input type="hidden" name="action" value="create_folder">-->
-<!--                        <div class="mb-3">-->
-<!--                            <label class="form-label">Nom du dossier</label>-->
-<!--                            <input type="text" class="form-control" name="folder_name" placeholder="Ex: Cours S1, TD, Annales..." required>-->
-<!--                        </div>-->
-<!--                        <button type="submit" class="btn btn-success w-100">Créer le dossier</button>-->
-<!--                    </form>-->
-<!--                </div>-->
-<!--            </div>-->
         </div>
-
         <div class="col-md-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-white fw-bold">Invitations envoyées</div>
@@ -183,10 +182,10 @@ $pending_files = Database::getPromotionPendingFiles($_SESSION['promotion_id']);
                 </div>
             </div>
             <div class="card shadow-sm mt-4">
-                <div class="card-header bg-white fw-bold">
+                <div class="card-header bg-white fw-bold" id="folderHeader">
                     <div class="d-flex justify-content-between align-items-center">
                         <span>Arborescence des dossiers</span>
-                        <button class="btn btn-sm btn-outline-success" onclick="openFolder(1)">Actualiser</button>
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#createFolderModal">Créer un dossier</button>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -206,19 +205,67 @@ $pending_files = Database::getPromotionPendingFiles($_SESSION['promotion_id']);
         </div>
     </div>
 </div>
+<div class="modal fade" id="createFolderModal" tabindex="-1" aria-labelledby="createFolderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="createFolderForm" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createFolderModalLabel">Créer un nouveau dossier</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="folderNameInput" class="form-label">Nom du dossier</label>
+                        <input type="text" class="form-control" id="folderNameInput" name="folder_name" required>
+                    </div>
+                    <input type="hidden" name="action" value="create_folder">
+                    <input type="hidden" name="parent_id" value="">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">Créer le dossier</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="deleteForm" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Supprimer un élément</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Êtes-vous sûr de vouloir supprimer cet élément ?</p>
+                    <input type="hidden" name="action" value="delete_folder">
+                    <input type="hidden" name="element_id" value="">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-danger">Supprimer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function openFolder(folderId) {
         fetch(`delegate.php?folderId=${folderId}`)
             .then(response => response.json())
             .then(data => {
                 const rows = [];
+                let hasContent = false;
                 const currentFolder = data.folder;
 
-                if (currentFolder && currentFolder.parent_id !== null) {
+                if (currentFolder) {
+                    const previousFolderId = currentFolder.parent_id !== null ? currentFolder.parent_id : 'null';
                     rows.push(`
                         <tr>
                             <td>
-                                <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="openFolder(${currentFolder.parent_id})">
+                                <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="openFolder(${previousFolderId})">
                                     📁.. / Retour
                                 </button>
                             </td>
@@ -229,6 +276,7 @@ $pending_files = Database::getPromotionPendingFiles($_SESSION['promotion_id']);
                 }
 
                 if (data.folders && data.folders.length) {
+                    hasContent = true;
                     data.folders.forEach(folder => {
                         rows.push(`
                             <tr>
@@ -238,35 +286,51 @@ $pending_files = Database::getPromotionPendingFiles($_SESSION['promotion_id']);
                                     </button>
                                 </td>
                                 <td>${folder.created_at ? new Date(folder.created_at).toLocaleString('fr-FR') : ''}</td>
-                                <td></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteFolder(${folder.id})">Supprimer</button>
+                                </td>
                             </tr>
                         `);
                     });
                 }
 
                 if (data.files && data.files.length) {
+                    hasContent = true;
                     data.files.forEach(file => {
                         rows.push(`
                             <tr>
                                 <td>📄 ${file.original_name}</td>
                                 <td>${file.created_at ? new Date(file.created_at).toLocaleString('fr-FR') : ''}</td>
-                                <td><a href="view.php?id=${file.id}" target="_blank" class="btn btn-sm btn-outline-info">Voir</a></td>
+                                <td><a href="view.php?id=${file.id}" target="_blank" class="btn btn-sm btn-outline-info">Voir</a><button class="btn btn-sm btn-outline-danger" onclick="deleteFile(${file.id})">Supprimer</button></td>
                             </tr>
                         `);
                     });
                 }
 
-                if (!rows.length) {
+                if (!hasContent) {
                     rows.push('<tr><td colspan="3" class="text-center text-muted py-3">Aucun fichier ni dossier dans cet emplacement.</td></tr>');
                 }
 
                 document.querySelector('#folderTable tbody').innerHTML = rows.join('');
+                let button = document.querySelector('#folderHeader button');
+                button.textContent = `Créer un dossier dans "${currentFolder ? currentFolder.name : 'Racine'}"`;
+                document.querySelector('#createFolderForm input[name="parent_id"]').value = folderId;
             })
             .catch(error => console.error('Erreur:', error));
     }
 
+    function deleteFolder(folderId) {
+        document.querySelector('#deleteForm input[name="element_id"]').value = folderId;
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+
+    function deleteFile(fileId) {
+        document.querySelector('#deleteForm input[name="element_id"]').value = fileId;
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
-        openFolder(1);
+        openFolder(null);
     });
 </script>
 </body>
