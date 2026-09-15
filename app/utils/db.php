@@ -239,8 +239,28 @@ class Database
     public static function deletePromotionFolder(int $folder_id): bool
     {
         $pdo = self::getConnection();
+        $folderStmt = $pdo->prepare("SELECT id FROM folders WHERE id = ?");
+        $folderStmt->execute([$folder_id]);
+        $folder = $folderStmt->fetch();
+
+        if (!$folder) {
+            return false;
+        }
+
+        foreach (self::getChildFolderIds($folder_id) as $childFolderId) {
+            self::deletePromotionFolder($childFolderId);
+        }
+
+        $filesStmt = $pdo->prepare("SELECT id FROM files WHERE folder_id = ?");
+        $filesStmt->execute([$folder_id]);
+        $fileIds = $filesStmt->fetchAll(PDO::FETCH_COLUMN);
+
+        foreach ($fileIds as $fileId) {
+            self::rejectPromotionFile((int) $fileId);
+        }
+
         $stmt = $pdo->prepare("DELETE FROM folders WHERE id = ?");
-        return $stmt->execute([self::sanitizeInput($folder_id)]);
+        return $stmt->execute([$folder_id]);
     }
 
     public static function getUserPendingFiles(int $user_id): array
@@ -268,10 +288,20 @@ class Database
 
     public static function rejectPromotionFile(int $file_id): bool
     {
-        @unlink(__DIR__ . '/uploads/' . self::getConnection()->prepare("SELECT file_path FROM files WHERE id = ?")->execute([self::sanitizeInput($file_id)]));
         $pdo = self::getConnection();
+        $fileStmt = $pdo->prepare("SELECT file_path FROM files WHERE id = ?");
+        $fileStmt->execute([$file_id]);
+        $file = $fileStmt->fetch();
+
+        if ($file && !empty($file['file_path'])) {
+            $fullPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $file['file_path'];
+            if (is_file($fullPath)) {
+                unlink($fullPath);
+            }
+        }
+
         $stmt = $pdo->prepare("DELETE FROM files WHERE id = ?");
-        return $stmt->execute([self::sanitizeInput($file_id)]);
+        return $stmt->execute([$file_id]);
     }
 
     public static function getFile(int $file_id): ?array
@@ -305,6 +335,14 @@ class Database
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("INSERT INTO folders (promotion_id, parent_id, name) VALUES (?, ?, ?)");
         return $stmt->execute([$promotion_id, $parent_id, self::sanitizeInput($folder_name)]);
+    }
+
+    private static function getChildFolderIds(int $folder_id): array
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT id FROM folders WHERE parent_id = ?");
+        $stmt->execute([$folder_id]);
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
     }
 
     private static function isEmailRegistered(string $email): bool
