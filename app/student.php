@@ -37,7 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
 
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime_type = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
 
         if (array_key_exists($mime_type, $allowed_types)) {
             $ext = $allowed_types[$mime_type];
@@ -82,8 +81,12 @@ $my_pending_files = Database::getUserPendingFiles($user_id);
     <div class="container">
         <span class="navbar-brand mb-0 h1">CampusDrive - Mon Espace</span>
         <div>
+            <a href="student.php" class="btn btn-light btn-sm me-2">Accueil</a>
+            <?php if ($_SESSION['role'] === 'delegate'): ?>
+                <a href="delegate.php" class="btn btn-outline-light btn-sm me-2">Espace délégué</a>
+            <?php endif; ?>
             <a href="settings.php" class="btn btn-outline-light btn-sm me-2">Paramètres</a>
-            <a href="logout.php" class="btn btn-light btn-sm">Déconnexion</a>
+            <a href="logout.php" class="btn btn-outline-danger btn-sm">Déconnexion</a>
         </div>
     </div>
 </nav>

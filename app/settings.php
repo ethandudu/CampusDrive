@@ -51,12 +51,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     <div class="container">
         <span class="navbar-brand mb-0 h1">CampusDrive - Paramètres</span>
         <div>
+            <a href="student.php" class="btn btn-outline-light btn-sm me-2">Accueil</a>
             <?php if ($user['role'] === 'delegate'): ?>
-                <a href="delegate.php" class="btn btn-outline-light btn-sm me-2">Retour au Dashboard</a>
-            <?php else: ?>
-                <a href="student.php" class="btn btn-outline-light btn-sm me-2">Retour au Dashboard</a>
+                <a href="delegate.php" class="btn btn-outline-light btn-sm me-2">Espace délégué</a>
             <?php endif; ?>
-            <a href="logout.php" class="btn btn-light btn-sm">Déconnexion</a>
+            <a href="settings.php" class="btn btn-light btn-sm me-2">Paramètres</a>
+            <a href="logout.php" class="btn btn-outline-danger btn-sm">Déconnexion</a>
         </div>
     </div>
 </nav>

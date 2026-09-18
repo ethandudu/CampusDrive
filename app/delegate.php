@@ -89,7 +89,12 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
 <nav class="navbar navbar-dark bg-success mb-4 shadow">
     <div class="container">
         <span class="navbar-brand mb-0 h1">CampusDrive - Délégué (<?= htmlspecialchars($promo['name']) ?>)</span>
-        <a href="logout.php" class="btn btn-outline-light btn-sm">Déconnexion</a>
+        <div>
+            <a href="student.php" class="btn btn-outline-light btn-sm me-2">Accueil</a>
+            <a href="delegate.php" class="btn btn-light btn-sm me-2">Espace délégué</a>
+            <a href="settings.php" class="btn btn-outline-light btn-sm me-2">Paramètres</a>
+            <a href="logout.php" class="btn btn-outline-danger btn-sm">Déconnexion</a>
+        </div>
     </div>
 </nav>
 
