@@ -330,8 +330,13 @@ class Database
         return $stmt->fetchAll();
     }
 
-    public static function createFolder(int $promotion_id, int $parent_id, string $folder_name): bool
+    public static function createFolder(int $promotion_id, int|string|null $parent_id, string $folder_name): bool
     {
+        if ($parent_id === '' || $parent_id === 'null') {
+            $parent_id = null;
+        } elseif (!is_null($parent_id)) {
+            $parent_id = (int) $parent_id;
+        }
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("INSERT INTO folders (promotion_id, parent_id, name) VALUES (?, ?, ?)");
         return $stmt->execute([$promotion_id, $parent_id, self::sanitizeInput($folder_name)]);

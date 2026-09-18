@@ -42,8 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
 // Create new folder
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_folder') {
     $folder_name = trim($_POST['folder_name']);
+    $parent_id = isset($_POST['parent_id']) && $_POST['parent_id'] !== '' && $_POST['parent_id'] !== 'null'
+        ? (int) $_POST['parent_id']
+        : null;
     if (!empty($folder_name)) {
-        Database::createFolder($_SESSION['promotion_id'], $_POST['parent_id'], $folder_name);
+        Database::createFolder($_SESSION['promotion_id'], $parent_id, $folder_name);
     }
 }
 
@@ -319,7 +322,7 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
                 document.querySelector('#folderTable tbody').innerHTML = rows.join('');
                 let button = document.querySelector('#folderHeader button');
                 button.textContent = `Créer un dossier dans "${currentFolder ? currentFolder.name : 'Racine'}"`;
-                document.querySelector('#createFolderForm input[name="parent_id"]').value = folderId;
+                document.querySelector('#createFolderForm input[name="parent_id"]').value = folderId ?? 'null';
             })
             .catch(error => console.error('Erreur:', error));
     }
