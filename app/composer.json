@@ -1,0 +1,12 @@
+{
+    "name": "campusdrive/app",
+    "description": "CampusDrive application",
+    "type": "project",
+    "require": {
+        "php": ">=8.5",
+        "phpmailer/phpmailer": "^7.1"
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

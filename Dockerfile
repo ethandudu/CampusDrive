@@ -1,5 +1,7 @@
 FROM php:8.5-apache
 
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 # Ajout des librairies pour l'extension GD (nécessaire pour les Captchas)
 RUN apt-get update && apt-get install -y \
     libzip-dev zip unzip \
@@ -17,3 +19,9 @@ RUN echo "file_uploads = On\n" \
          > /usr/local/etc/php/conf.d/uploads.ini
 
 RUN chown -R www-data:www-data /var/www/html
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["apache2-foreground"]
