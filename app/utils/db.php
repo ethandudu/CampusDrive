@@ -1,13 +1,9 @@
 <?php
 
+require_once __DIR__ . '/config.php';
 class Database
 {
     private static ?PDO $instance = null;
-
-    private const HOST = 'mariadb';
-    private const DBNAME = 'campusdrive';
-    private const USER = 'campususer';
-    private const PASSWORD = 'campuspassword';
 
     private function __construct()
     {
@@ -20,11 +16,11 @@ class Database
                 self::$instance = new PDO(
                     sprintf(
                         'mysql:host=%s;dbname=%s;charset=utf8mb4',
-                        self::HOST,
-                        self::DBNAME
+                        DB_HOST,
+                        DB_NAME
                     ),
-                    self::USER,
-                    self::PASSWORD,
+                    DB_USER,
+                    DB_PASSWORD,
                     [
                         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

@@ -2,3 +2,4 @@
 app/dCaptcha
 app/uploads
 vendor
+app/utils/config.php
