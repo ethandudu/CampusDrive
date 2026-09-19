@@ -1,0 +1,27 @@
+Options -Indexes -MultiViews
+
+DirectoryIndex index.php
+
+RewriteEngine On
+
+# Never expose application internals or uploaded scripts.
+RewriteRule ^(?:vendor|utils|dCaptcha)(?:/|$) - [F,L,NC]
+RewriteRule ^uploads/.*\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh)(?:/|$) - [F,L,NC]
+
+# Block hidden files and common secrets.
+RewriteRule ^\.(?:.*)(?:/|$) - [F,L,NC]
+RewriteRule ^(?:composer\.(?:json|lock)|(?:package|webpack)\.json|\.env(?:\..*)?|.*\.(?:bak|conf|dist|fla|ini|log|old|orig|save|sql|swp|yml|yaml))$ - [F,L,NC]
+
+<FilesMatch "(?i)^(?:\.env(?:\..*)?|composer\.(?:json|lock)|(?:package|webpack)\.json|.*\.(?:bak|conf|dist|fla|ini|log|old|orig|save|sql|swp|yml|yaml))$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+    # HSTS is sent only after HTTPS is active.
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" "expr=%{HTTPS} == 'on'"
+</IfModule>
