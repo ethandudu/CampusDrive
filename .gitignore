@@ -1,1 +1,4 @@
 .idea
+app/dCaptcha
+app/uploads
+vendor
