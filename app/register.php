@@ -6,6 +6,7 @@ error_reporting(E_ALL);
 require_once 'utils/db.php';
 require_once 'utils/session.php';
 require_once 'dCaptcha/captcha.php';
+require_once 'utils/mail.php';
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -24,7 +25,6 @@ $token = htmlspecialchars(trim($_GET['token'] ?? ''));
 $invited_email = '';
 $promo_id = null;
 
-// Si un token d'invitation est présent, on le vérifie
 if ($token) {
     $invitation = Database::getInvitationByToken($token);
 
@@ -46,8 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
     $captcha_input = htmlspecialchars(trim($_POST['captcha'] ?? ''));
 
-    // Vérification du Captcha
-    // Attention : Vérifie dans la doc dCaptcha le nom exact de la clé de session (souvent $_SESSION['captcha'] ou $_SESSION['dCaptcha'])
+    // Captcha validation
     if (empty($captcha_input) || strtolower($captcha_input) !== strtolower($_SESSION['captcha'] ?? '')) {
         $error = "Le code de vérification est incorrect.";
     }
@@ -60,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if (Database::createUser($email, $password, $promo_id)) {
                 Database::markInvitationAsUsed($token);
+                (new Mailer)->sendMail($email, "Bienvenue sur CampusDrive", "Votre compte a été créé avec succès !");
                 header("Location: login.php?registered=1");
                 exit;
             }
