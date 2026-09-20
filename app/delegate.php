@@ -1,6 +1,7 @@
 <?php
 require_once 'utils/db.php';
 require_once 'utils/session.php';
+require_once 'utils/i18n.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'delegate') {
     header('Location: login.php');
@@ -32,7 +33,7 @@ if (isset($_GET['folderId'])) {
 // Handle invitation generation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        die("Erreur de sécurité : Jeton CSRF invalide.");
+        die(t('security_error'));
     }
     $token = bin2hex(random_bytes(32));
 
@@ -67,7 +68,7 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
 // Validation or rejection of files
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        die("Erreur de sécurité : Jeton CSRF invalide.");
+        die(t('security_error'));
     }
     $file_id = (int) $_POST['file_id'];
     if ($_POST['file_action'] === 'approve') {
@@ -82,21 +83,21 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
 
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= locale() ?>">
 <head>
     <meta charset="UTF-8">
-    <title>Espace Délégué - CampusDrive</title>
+    <title><?= t('delegate_area') ?> - CampusDrive</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 <nav class="navbar navbar-dark bg-success mb-4 shadow">
     <div class="container">
-        <span class="navbar-brand mb-0 h1">CampusDrive - Délégué (<?= htmlspecialchars($promo['name']) ?>)</span>
+        <span class="navbar-brand mb-0 h1">CampusDrive - <?= t('delegate_area') ?> (<?= htmlspecialchars($promo['name']) ?>)</span>
         <div>
-            <a href="student.php" class="btn btn-outline-light btn-sm me-2">Accueil</a>
-            <a href="delegate.php" class="btn btn-light btn-sm me-2">Espace délégué</a>
-            <a href="settings.php" class="btn btn-outline-light btn-sm me-2">Paramètres</a>
-            <a href="logout.php" class="btn btn-outline-danger btn-sm">Déconnexion</a>
+            <a href="student.php" class="btn btn-outline-light btn-sm me-2"><?= t('home') ?></a>
+            <a href="delegate.php" class="btn btn-light btn-sm me-2"><?= t('delegate_area') ?></a>
+            <a href="settings.php" class="btn btn-outline-light btn-sm me-2"><?= t('settings') ?></a>
+            <a href="logout.php" class="btn btn-outline-danger btn-sm"><?= t('logout') ?></a>
         </div>
     </div>
 </nav>
@@ -105,31 +106,31 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
     <div class="row">
         <div class="col-md-4">
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white fw-bold">Inviter un étudiant</div>
+                <div class="card-header bg-white fw-bold"><?= t('invite_student') ?></div>
                 <div class="card-body">
                     <?php if ($success): ?>
                         <div class="alert alert-info py-2"><?= $success ?></div>
                     <?php endif; ?>
                     <form method="POST">
                         <div class="mb-3">
-                            <label class="form-label">Email de l'étudiant</label>
+                            <label class="form-label"><?= t('student_email') ?></label>
                             <input type="email" class="form-control" name="invite_email" required>
                         </div>
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                        <button type="submit" class="btn btn-success w-100">Générer l'invitation</button>
+                        <button type="submit" class="btn btn-success w-100"><?= t('generate_invitation') ?></button>
                     </form>
                 </div>
             </div>
         </div>
         <div class="col-md-8">
             <div class="card shadow-sm">
-                <div class="card-header bg-white fw-bold">Invitations envoyées</div>
+                <div class="card-header bg-white fw-bold"><?= t('sent_invitations') ?></div>
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                     <tr>
                         <th>Email</th>
-                        <th>Statut</th>
-                        <th>Date</th>
+                        <th><?= t('status') ?></th>
+                        <th><?= t('date') ?></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -138,32 +139,32 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
                             <td><?= htmlspecialchars($inv['email']) ?></td>
                             <td>
                                 <?php if ($inv['is_used']): ?>
-                                    <span class="badge bg-secondary">Inscrit</span>
+                                    <span class="badge bg-secondary"><?= t('registered') ?></span>
                                 <?php else: ?>
-                                    <span class="badge bg-warning text-dark">En attente</span>
+                                    <span class="badge bg-warning text-dark"><?= t('pending') ?></span>
                                 <?php endif; ?>
                             </td>
                             <td><?= date('d/m/Y H:i', strtotime($inv['created_at'])) ?></td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if(empty($invitations)): ?>
-                        <tr><td colspan="3" class="text-center text-muted">Aucune invitation envoyée.</td></tr>
+                        <tr><td colspan="3" class="text-center text-muted"><?= t('no_invitations') ?></td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
             </div>
             <div class="card shadow-sm mt-4">
-                <div class="card-header bg-white fw-bold">Fichiers en attente de validation</div>
+                <div class="card-header bg-white fw-bold"><?= t('files_pending') ?></div>
                 <div class="card-body p-0">
                     <?php if (empty($pending_files)): ?>
-                        <p class="text-muted p-3 mb-0">Aucun fichier en attente.</p>
+                        <p class="text-muted p-3 mb-0"><?= t('no_files_pending') ?></p>
                     <?php else: ?>
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
                             <tr>
-                                <th>Fichier</th>
-                                <th>Auteur</th>
-                                <th>Action</th>
+                                <th><?= t('file') ?></th>
+                                <th><?= t('author') ?></th>
+                                <th><?= t('action') ?></th>
                             </tr>
                             </thead>
                             <tbody>
@@ -174,11 +175,11 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
                                     </td>
                                     <td class="align-middle"><?= htmlspecialchars($pf['uploader_email']) ?></td>
                                     <td class="align-middle">
-                                        <a href="view.php?id=<?= $pf['id'] ?>" target="_blank" class="btn btn-sm btn-outline-info me-2">Aperçu</a>
+                                        <a href="view.php?id=<?= $pf['id'] ?>" target="_blank" class="btn btn-sm btn-outline-info me-2"><?= t('preview') ?></a>
                                         <form method="POST" class="d-inline">
                                             <input type="hidden" name="file_id" value="<?= $pf['id'] ?>">
-                                            <button type="submit" name="file_action" value="approve" class="btn btn-sm btn-success">Valider</button>
-                                            <button type="submit" name="file_action" value="reject" class="btn btn-sm btn-danger">Refuser</button>
+                                            <button type="submit" name="file_action" value="approve" class="btn btn-sm btn-success"><?= t('approve') ?></button>
+                                            <button type="submit" name="file_action" value="reject" class="btn btn-sm btn-danger"><?= t('reject') ?></button>
                                             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                         </form>
                                     </td>
@@ -192,17 +193,17 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
             <div class="card shadow-sm mt-4">
                 <div class="card-header bg-white fw-bold" id="folderHeader">
                     <div class="d-flex justify-content-between align-items-center">
-                        <span>Arborescence des dossiers</span>
-                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#createFolderModal">Créer un dossier</button>
+                        <span><?= t('folders') ?></span>
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#createFolderModal"><?= t('create_folder') ?></button>
                     </div>
                 </div>
                 <div class="card-body p-0">
                     <table class="table table-hover mb-0" id="folderTable">
                         <thead class="table-light">
                         <tr>
-                            <th>Nom</th>
-                            <th>Créé le</th>
-                            <th>Actions</th>
+                            <th><?= t('name') ?></th>
+                            <th><?= t('created_at') ?></th>
+                            <th><?= t('action') ?></th>
                         </tr>
                         </thead>
                         <tbody>
@@ -218,20 +219,20 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
         <div class="modal-content">
             <form id="createFolderForm" method="POST">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="createFolderModalLabel">Créer un nouveau dossier</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <h5 class="modal-title" id="createFolderModalLabel"><?= t('new_folder') ?></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= t('cancel') ?>"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="folderNameInput" class="form-label">Nom du dossier</label>
+                        <label for="folderNameInput" class="form-label"><?= t('folder_name') ?></label>
                         <input type="text" class="form-control" id="folderNameInput" name="folder_name" required>
                     </div>
                     <input type="hidden" name="action" value="create_folder">
                     <input type="hidden" name="parent_id" value="">
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-success">Créer le dossier</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= t('cancel') ?></button>
+                    <button type="submit" class="btn btn-success"><?= t('create_folder') ?></button>
                 </div>
             </form>
         </div>
@@ -242,17 +243,17 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
         <div class="modal-content">
             <form id="deleteForm" method="POST">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="deleteModalLabel">Supprimer un élément</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <h5 class="modal-title" id="deleteModalLabel"><?= t('delete_item') ?></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= t('cancel') ?>"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Êtes-vous sûr de vouloir supprimer cet élément ?</p>
+                    <p><?= t('delete_confirmation') ?></p>
                     <input type="hidden" name="action" value="delete_folder">
                     <input type="hidden" name="element_id" value="">
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-danger">Supprimer</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= t('cancel') ?></button>
+                    <button type="submit" class="btn btn-danger"><?= t('delete') ?></button>
                 </div>
             </form>
         </div>
@@ -260,6 +261,17 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    const locale = <?= json_encode(locale()) ?>;
+    const labels = <?= json_encode([
+        'back' => t('back'),
+        'delete' => t('delete'),
+        'view' => t('view'),
+        'emptyFolder' => t('empty_folder'),
+        'createFolderIn' => t('create_folder_in'),
+        'root' => t('root'),
+        'error' => t('generic_error'),
+    ]) ?>;
+
     function openFolder(folderId) {
         fetch(`delegate.php?folderId=${folderId}`)
             .then(response => response.json())
@@ -274,7 +286,7 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
                         <tr>
                             <td>
                                 <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="openFolder(${previousFolderId})">
-                                    📁.. / Retour
+                                    📁.. / ${labels.back}
                                 </button>
                             </td>
                             <td></td>
@@ -293,9 +305,9 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
                                         📁 ${folder.name}
                                     </button>
                                 </td>
-                                <td>${folder.created_at ? new Date(folder.created_at).toLocaleString('fr-FR') : ''}</td>
+                                <td>${folder.created_at ? new Date(folder.created_at).toLocaleString(locale) : ''}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteFolder(${folder.id})">Supprimer</button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteFolder(${folder.id})">${labels.delete}</button>
                                 </td>
                             </tr>
                         `);
@@ -308,23 +320,23 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
                         rows.push(`
                             <tr>
                                 <td>📄 ${file.original_name}</td>
-                                <td>${file.created_at ? new Date(file.created_at).toLocaleString('fr-FR') : ''}</td>
-                                <td><a href="view.php?id=${file.id}" target="_blank" class="btn btn-sm btn-outline-info">Voir</a><button class="btn btn-sm btn-outline-danger" onclick="deleteFile(${file.id})">Supprimer</button></td>
+                                <td>${file.created_at ? new Date(file.created_at).toLocaleString(locale) : ''}</td>
+                                <td><a href="view.php?id=${file.id}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a><button class="btn btn-sm btn-outline-danger" onclick="deleteFile(${file.id})">${labels.delete}</button></td>
                             </tr>
                         `);
                     });
                 }
 
                 if (!hasContent) {
-                    rows.push('<tr><td colspan="3" class="text-center text-muted py-3">Aucun fichier ni dossier dans cet emplacement.</td></tr>');
+                    rows.push(`<tr><td colspan="3" class="text-center text-muted py-3">${labels.emptyFolder}</td></tr>`);
                 }
 
                 document.querySelector('#folderTable tbody').innerHTML = rows.join('');
                 let button = document.querySelector('#folderHeader button');
-                button.textContent = `Créer un dossier dans "${currentFolder ? currentFolder.name : 'Racine'}"`;
+                button.textContent = labels.createFolderIn.replace('%name%', currentFolder ? currentFolder.name : labels.root);
                 document.querySelector('#createFolderForm input[name="parent_id"]').value = folderId ?? 'null';
             })
-            .catch(error => console.error('Erreur:', error));
+            .catch(error => console.error(labels.error, error));
     }
 
     function deleteFolder(folderId) {

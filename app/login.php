@@ -1,6 +1,7 @@
 <?php
 require_once 'utils/db.php';
 require_once 'utils/session.php';
+require_once 'utils/i18n.php';
 $message = '';
 $error = '';
 
@@ -9,12 +10,12 @@ if (empty($_SESSION['csrf_token'])) {
 }
 
 if (isset($_GET['registered'])){
-    $message = "Inscription réussie ! Vous pouvez maintenant vous connecter.";
+    $message = t('registration_success');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        die("Erreur de sécurité : Jeton CSRF invalide.");
+        die(t('security_error'));
     }
 
     $user = Database::loginUser($_POST['email'], $_POST['password']);
@@ -23,6 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['role'] = $user['role'];
         $_SESSION['promotion_id'] = $user['promotion_id'];
+        $_SESSION['locale'] = in_array($user['language'] ?? null, array_keys(SUPPORTED_LOCALES), true)
+            ? $user['language']
+            : DEFAULT_LOCALE;
 
         if ($user['role'] === 'admin') {
             header('Location: admin.php');
@@ -31,15 +35,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     } else {
-        $error = 'Email ou mot de passe incorrect.';
+        $error = t('invalid_credentials');
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= locale() ?>">
 <head>
     <meta charset="UTF-8">
-    <title>Connexion - CampusDrive</title>
+    <title><?= t('login') ?> - CampusDrive</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light d-flex align-items-center vh-100">
@@ -59,18 +63,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php endif; ?>
                     <form method="POST" action="login.php">
                         <div class="mb-3">
-                            <label for="email" class="form-label">Adresse Email</label>
+                            <label for="email" class="form-label"><?= t('email') ?></label>
                             <input type="email" class="form-control" id="email" name="email" required>
                         </div>
                         <div class="mb-4">
-                            <label for="password" class="form-label">Mot de passe</label>
+                            <label for="password" class="form-label"><?= t('password') ?></label>
                             <input type="password" class="form-control" id="password" name="password" required>
                         </div>
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                        <button type="submit" class="btn btn-primary w-100">Se connecter</button>
+                        <button type="submit" class="btn btn-primary w-100"><?= t('sign_in') ?></button>
                     </form>
                     <div class="mt-3 text-center">
-                        <a href="register.php" class="text-decoration-none">Créer un compte</a>
+                        <a href="register.php" class="text-decoration-none"><?= t('create_account') ?></a>
                     </div>
                 </div>
             </div>

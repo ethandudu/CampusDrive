@@ -1,6 +1,7 @@
 <?php
 require_once 'utils/db.php';
 require_once 'utils/session.php';
+require_once 'utils/i18n.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -51,15 +52,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
 
             if (move_uploaded_file($file['tmp_name'], $destination)) {
                 Database::createFileRecord($user_id, $promo_id, $file['name'], $stored_name, $mime_type);
-                $message = "Fichier envoyé avec succès ! Il sera visible une fois validé par votre délégué.";
+                $message = t('file_uploaded');
             } else {
-                $error = "Erreur lors de l'enregistrement du fichier sur le serveur.";
+                $error = t('file_save_error');
             }
         } else {
-            $error = "Format non autorisé. Seuls les PDF, images (JPG, PNG, GIF) et vidéos (MP4, WEBM) sont acceptés.";
+            $error = t('file_type_error');
         }
     } else {
-        $error = "Erreur lors du transfert du fichier.";
+        $error = t('file_upload_error');
     }
 }
 
@@ -70,23 +71,23 @@ $approved_files = Database::getPromotionFiles($promo_id);
 $my_pending_files = Database::getUserPendingFiles($user_id);
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= locale() ?>">
 <head>
     <meta charset="UTF-8">
-    <title>Espace Étudiant - CampusDrive</title>
+    <title><?= t('student_area') ?> - CampusDrive</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 <nav class="navbar navbar-dark bg-primary mb-4 shadow">
     <div class="container">
-        <span class="navbar-brand mb-0 h1">CampusDrive - Mon Espace</span>
+        <span class="navbar-brand mb-0 h1">CampusDrive - <?= t('student_area') ?></span>
         <div>
-            <a href="student.php" class="btn btn-light btn-sm me-2">Accueil</a>
+            <a href="student.php" class="btn btn-light btn-sm me-2"><?= t('home') ?></a>
             <?php if ($_SESSION['role'] === 'delegate'): ?>
-                <a href="delegate.php" class="btn btn-outline-light btn-sm me-2">Espace délégué</a>
+                <a href="delegate.php" class="btn btn-outline-light btn-sm me-2"><?= t('delegate_area') ?></a>
             <?php endif; ?>
-            <a href="settings.php" class="btn btn-outline-light btn-sm me-2">Paramètres</a>
-            <a href="logout.php" class="btn btn-outline-danger btn-sm">Déconnexion</a>
+            <a href="settings.php" class="btn btn-outline-light btn-sm me-2"><?= t('settings') ?></a>
+            <a href="logout.php" class="btn btn-outline-danger btn-sm"><?= t('logout') ?></a>
         </div>
     </div>
 </nav>
@@ -96,30 +97,30 @@ $my_pending_files = Database::getUserPendingFiles($user_id);
         <!-- Formulaire d'upload -->
         <div class="col-md-4">
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white fw-bold">Partager un document</div>
+                <div class="card-header bg-white fw-bold"><?= t('share_document') ?></div>
                 <div class="card-body">
                     <?php if ($message): ?><div class="alert alert-success py-2"><?= $message ?></div><?php endif; ?>
                     <?php if ($error): ?><div class="alert alert-danger py-2"><?= $error ?></div><?php endif; ?>
 
                     <form method="POST" enctype="multipart/form-data">
                         <div class="mb-3">
-                            <label class="form-label">Sélectionner un fichier</label>
+                            <label class="form-label"><?= t('select_file') ?></label>
                             <input type="file" class="form-control" name="file_upload" required>
-                            <div class="form-text">Formats : PDF, Images, Vidéos (max 10 Mo).</div>
+                            <div class="form-text"><?= t('formats') ?></div>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Envoyer pour validation</button>
+                        <button type="submit" class="btn btn-primary w-100"><?= t('submit_for_approval') ?></button>
                     </form>
                 </div>
             </div>
 
             <?php if (!empty($my_pending_files)): ?>
                 <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-warning text-dark fw-bold">Mes envois en attente</div>
+                    <div class="card-header bg-warning text-dark fw-bold"><?= t('pending_uploads') ?></div>
                     <ul class="list-group list-group-flush">
                         <?php foreach ($my_pending_files as $p_file): ?>
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 <small class="text-truncate" style="max-width: 180px;"><?= htmlspecialchars($p_file['original_name']) ?></small>
-                                <span class="badge bg-secondary">En attente</span>
+                                <span class="badge bg-secondary"><?= t('pending') ?></span>
                             </li>
                         <?php endforeach; ?>
                     </ul>
@@ -130,18 +131,18 @@ $my_pending_files = Database::getUserPendingFiles($user_id);
         <!-- Fichiers partagés dans la promotion -->
         <div class="col-md-8">
             <div class="card shadow-sm">
-                <div class="card-header bg-white fw-bold">Documents de la promotion</div>
+                <div class="card-header bg-white fw-bold"><?= t('documents') ?></div>
                 <div class="card-body p-0">
                     <?php if (empty($approved_files)): ?>
-                        <p class="text-center text-muted p-4 mb-0">Aucun document validé disponible pour le moment.</p>
+                        <p class="text-center text-muted p-4 mb-0"><?= t('no_documents') ?></p>
                     <?php else: ?>
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
                             <tr>
-                                <th>Nom du fichier</th>
-                                <th>Partagé par</th>
-                                <th>Date</th>
-                                <th class="text-end">Action</th>
+                                <th><?= t('file_name') ?></th>
+                                <th><?= t('shared_by') ?></th>
+                                <th><?= t('date') ?></th>
+                                <th class="text-end"><?= t('action') ?></th>
                             </tr>
                             </thead>
                             <tbody>
@@ -151,7 +152,7 @@ $my_pending_files = Database::getUserPendingFiles($user_id);
                                     <td class="align-middle"><small><?= htmlspecialchars($file['uploader_email']) ?></small></td>
                                     <td class="align-middle"><small><?= date('d/m/Y', strtotime($file['created_at'])) ?></small></td>
                                     <td class="text-end">
-                                        <a href="view.php?id=<?= $file['id'] ?>" target="_blank" class="btn btn-sm btn-outline-primary">Consulter</a>
+                                        <a href="view.php?id=<?= $file['id'] ?>" target="_blank" class="btn btn-sm btn-outline-primary"><?= t('view') ?></a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

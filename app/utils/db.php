@@ -66,6 +66,18 @@ class Database
         return $stmt->fetch() ?: null;
     }
 
+    public static function updateUserLanguage(int $userId, string $language): bool
+    {
+        if (!in_array($language, ['fr', 'en'], true)) {
+            throw new InvalidArgumentException('Unsupported language.');
+        }
+
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare('UPDATE users SET language = ? WHERE id = ?');
+
+        return $stmt->execute([$language, $userId]);
+    }
+
     public static function createPromotion(string $name): int
     {
         $pdo = self::getConnection();

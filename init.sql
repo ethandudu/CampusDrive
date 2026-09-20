@@ -3,6 +3,7 @@ CREATE TABLE users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     role ENUM('admin', 'delegate', 'student') NOT NULL DEFAULT 'student',
+    language VARCHAR(5) NOT NULL DEFAULT 'fr',
     promotion_id INT DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
