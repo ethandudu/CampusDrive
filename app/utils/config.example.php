@@ -12,3 +12,6 @@ define('MAIL_USERNAME', 'noreply@campusdrive.com');
 define('MAIL_PASSWORD', 'CampusPassword');
 define('MAIL_FROM', 'noreply@campusdrive.com');
 define('MAIL_FROM_NAME', 'CampusDrive');
+
+// Utils
+define('UNIVERSITY_EMAIL_DOMAINS', []);
