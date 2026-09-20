@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
     }
     $token = bin2hex(random_bytes(32));
 
-    Database::createInvitation($_SESSION['promotion_id'], $_POST['invite_email'], $token);
+    Database::createInvitation($_POST['invite_email'], $_SESSION['promotion_id'], $token);
 }
 
 // Create new folder

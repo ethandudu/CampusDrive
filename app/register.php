@@ -7,6 +7,7 @@ require_once 'utils/db.php';
 require_once 'utils/session.php';
 require_once 'dCaptcha/captcha.php';
 require_once 'utils/mail.php';
+require_once 'utils/config.php';
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
