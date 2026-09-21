@@ -96,6 +96,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <form method="POST">
                         <div class="mb-3">
+                            <div class="alert alert-primary" role="alert">
+                                <?= t('register_message') ?>
+                            </div>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label"><?= t('email') ?></label>
                             <input type="email" class="form-control" name="email" value="<?= htmlspecialchars($invited_email) ?>" <?= $token ? 'readonly' : 'required' ?>>
                         </div>
