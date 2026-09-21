@@ -18,9 +18,17 @@ if (Database::getPromotionStatus($_SESSION['promotion_id']) == 'pending') {
 }
 
 $success = '';
+$error = '';
+
+if (isset($_GET['error'])) {
+    $error = t($_GET['error']);
+}
+if (isset($_GET['success'])) {
+    $success = t($_GET['success']);
+}
 
 if (isset($_GET['folderId'])) {
-    $folderId = isset($_GET['folderId']) && $_GET['folderId'] !== 'null' && $_GET['folderId'] !== ''
+    $folderId = ($_GET['folderId']) && $_GET['folderId'] !== 'null' && $_GET['folderId'] !== ''
         ? (int) $_GET['folderId']
         : null;
     $folderDetails = Database::getPromotionFolderFiles($folderId, (int) $_SESSION['promotion_id']);
@@ -34,6 +42,18 @@ if (isset($_GET['folderId'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         die(t('security_error'));
+    }
+
+    //check if the email is in the allowed domains
+    $email_domain = substr(strrchr($_POST['invite_email'], "@"), 1);
+    if (!in_array($email_domain, UNIVERSITY_EMAIL_DOMAINS)) {
+        header('Location: delegate.php?error=invalid_email_domain');
+        exit;
+    }
+
+    if (Database::checkIfEmailIsAlreadyInvited($_POST['invite_email'], $_SESSION['promotion_id'])) {
+        header('Location: delegate.php?error=email_already_invited');
+        exit;
     }
     $token = bin2hex(random_bytes(32));
 
@@ -63,8 +83,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     Database::rejectPromotionFile($file_id);
 }
 
-$invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
-
 // Validation or rejection of files
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
@@ -80,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
 
 $pending_files = Database::getPromotionPendingFiles($_SESSION['promotion_id']);
 $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
+$invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
 
 ?>
 <!DOCTYPE html>
@@ -110,6 +129,9 @@ $promo = Database::getPromotionDetails($_SESSION['promotion_id']);
                 <div class="card-body">
                     <?php if ($success): ?>
                         <div class="alert alert-info py-2"><?= $success ?></div>
+                    <?php endif; ?>
+                    <?php if ($error): ?>
+                        <div class="alert alert-danger py-2"><?= $error ?></div>
                     <?php endif; ?>
                     <form method="POST">
                         <div class="mb-3">

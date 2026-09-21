@@ -320,6 +320,14 @@ class Database
         return $stmt->fetch() ?: null;
     }
 
+    public static function checkIfEmailIsAlreadyInvited(string $email, int $promotion_id): bool
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM invitations WHERE email = ? AND promotion_id = ?");
+        $stmt->execute([self::sanitizeInput($email), self::sanitizeInput($promotion_id)]);
+        return $stmt->fetchColumn() > 0;
+    }
+
     public static function createInvitation(string $email, int $promotion_id, string $token): bool
     {
         if (!self::validateEmail($email)) {
