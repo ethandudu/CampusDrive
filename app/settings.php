@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white fw-bold"><?= t('account') ?> (<?= htmlspecialchars($user['email']) ?>)</div>
                 <div class="card-body">
-                    <p><?= t('current_role') ?> : <span class="badge bg-primary text-uppercase"><?= $user['role'] ?></span></p>
+                    <p><?= t('current_role') ?> : <span class="badge bg-primary text-uppercase"><?= t($user['role']) ?></span></p>
 
                     <?php if ($user['promotion_id']): ?>
                         <p><?= t('promotion_area') ?> : <b><?= htmlspecialchars($user['promo_name']) ?></b></p>
