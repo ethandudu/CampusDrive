@@ -1,0 +1,12 @@
+body { color: #172033; }
+.hero-section { background: linear-gradient(135deg, #eef5ff 0%, #fff 65%); }
+.eyebrow { color: #0d6efd; font-size: .78rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.hero-card { background: #fff; border: 1px solid #e4ebf5; border-radius: 1rem; padding: 1.5rem; }
+.document-row { align-items: center; border-top: 1px solid #edf0f5; display: flex; gap: .75rem; padding: .9rem 0; }
+.document-row small { color: #8791a3; margin-left: auto; }
+.document-icon, .feature-icon { align-items: center; background: #e8f1ff; border-radius: .5rem; color: #0d6efd; display: inline-flex; font-size: .7rem; font-weight: 700; height: 2rem; justify-content: center; width: 2.4rem; }
+.feature-card { border: 1px solid #e4ebf5; border-radius: .85rem; padding: 1.5rem; }
+.feature-icon { margin-bottom: 1rem; }
+.cta-section { background: #f8fafc; }
+footer a { color: #526174; text-decoration: none; }
+footer a:hover { color: #0d6efd; }
