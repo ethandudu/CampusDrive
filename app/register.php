@@ -9,6 +9,7 @@ require_once 'utils/i18n.php';
 require_once 'dCaptcha/captcha.php';
 require_once 'utils/mail.php';
 require_once 'utils/config.php';
+require_once 'utils/emailTemplates/welcome.php';
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -61,7 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if (Database::createUser($email, $password, $promo_id)) {
                 Database::markInvitationAsUsed($token);
-                (new Mailer)->sendMail($email, "Bienvenue sur CampusDrive", "Votre compte a été créé avec succès !");
+                $welcomeEmail = welcomeEmailTemplate($email);
+                (new Mailer)->sendMail($email, $welcomeEmail['subject'], $welcomeEmail['body']);
                 header("Location: login.php?registered=1");
                 exit;
             }

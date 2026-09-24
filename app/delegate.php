@@ -2,6 +2,10 @@
 require_once 'utils/db.php';
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
+require_once 'utils/mail.php';
+require_once 'utils/emailTemplates/invitation.php';
+require_once 'utils/emailTemplates/file_approved.php';
+require_once 'utils/emailTemplates/file_rejected.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'delegate') {
     header('Location: login.php');
@@ -58,6 +62,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
     $token = bin2hex(random_bytes(32));
 
     Database::createInvitation($_POST['invite_email'], $_SESSION['promotion_id'], $token);
+
+    $promotionForInvite = Database::getPromotionDetails($_SESSION['promotion_id']);
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']);
+    $registerLink = $baseUrl . '/register.php?token=' . urlencode($token);
+    $invitationEmail = invitationEmailTemplate($promotionForInvite['name'] ?? '', $registerLink);
+    (new Mailer())->sendMail($_POST['invite_email'], $invitationEmail['subject'], $invitationEmail['body']);
 }
 
 // Create new folder
@@ -89,10 +100,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
         die(t('security_error'));
     }
     $file_id = (int) $_POST['file_id'];
+    $file = Database::getFile($file_id);
+    $uploader = $file ? Database::getUserDetails((string) $file['user_id']) : null;
+
     if ($_POST['file_action'] === 'approve') {
         Database::approvePromotionFile($file_id);
+        if ($file && $uploader && !empty($uploader['email'])) {
+            $fileApprovedEmail = fileApprovedEmailTemplate($file['original_name']);
+            (new Mailer())->sendMail($uploader['email'], $fileApprovedEmail['subject'], $fileApprovedEmail['body']);
+        }
     } elseif ($_POST['file_action'] === 'reject') {
         Database::rejectPromotionFile($file_id);
+        if ($file && $uploader && !empty($uploader['email'])) {
+            $fileRejectedEmail = fileRejectedEmailTemplate($file['original_name']);
+            (new Mailer())->sendMail($uploader['email'], $fileRejectedEmail['subject'], $fileRejectedEmail['body']);
+        }
     }
 }
 

@@ -2,6 +2,7 @@
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 require_once 'utils/mail.php';
+require_once 'utils/emailTemplates/contact_notification.php';
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -22,10 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (empty($_POST['privacy_consent'])) {
         $error = 'Votre consentement au traitement de votre message est nécessaire.';
     } else {
-        $body = '<p><strong>Nom :</strong> ' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</p>'
-            . '<p><strong>E-mail :</strong> ' . htmlspecialchars($email, ENT_QUOTES, 'UTF-8') . '</p>'
-            . '<p><strong>Message :</strong><br>' . nl2br(htmlspecialchars($content, ENT_QUOTES, 'UTF-8')) . '</p>';
-        if ((new Mailer())->sendMail(MAIL_FROM, '[CampusDrive] ' . $subject, $body, $email)) {
+        $contactEmail = contactNotificationEmailTemplate($name, $email, $subject, $content);
+        if ((new Mailer())->sendMail(MAIL_FROM, $contactEmail['subject'], $contactEmail['body'])) {
             $message = 'Votre message a bien été envoyé. Nous vous répondrons dans les meilleurs délais.';
             $name = $email = $subject = $content = '';
         } else {

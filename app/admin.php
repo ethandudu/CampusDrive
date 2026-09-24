@@ -2,6 +2,8 @@
 require_once 'utils/db.php';
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
+require_once 'utils/mail.php';
+require_once 'utils/emailTemplates/promotion_activated.php';
 
 // Sécurisation : seul l'admin peut accéder à cette page
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
@@ -12,10 +14,19 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 // Validation d'une promotion et attribution du rôle délégué
 if (isset($_POST['approve_promo_id'])) {
     $promo_id = (int) $_POST['approve_promo_id'];
+    $promo_to_activate = Database::getPromotionDetails($promo_id);
 
     Database::updatePromotionStatus($promo_id, 'active');
 
 //    Database::attachUserToPromotion($_SESSION['user_id'], $promo_id);
+
+    if ($promo_to_activate && !empty($promo_to_activate['created_by'])) {
+        $requester = Database::getUserDetails((string) $promo_to_activate['created_by']);
+        if ($requester && !empty($requester['email'])) {
+            $activationEmail = promotionActivatedEmailTemplate($promo_to_activate['name']);
+            (new Mailer())->sendMail($requester['email'], $activationEmail['subject'], $activationEmail['body']);
+        }
+    }
 
     $success = t('promotion_activated');
 }
