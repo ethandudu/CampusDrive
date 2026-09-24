@@ -4,7 +4,8 @@
     "type": "project",
     "require": {
         "php": ">=8.5",
-        "phpmailer/phpmailer": "^7.1"
+        "phpmailer/phpmailer": "^7.1",
+      "ext-fileinfo": "*"
     },
     "config": {
         "optimize-autoloader": true

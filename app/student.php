@@ -22,9 +22,26 @@ if (Database::getPromotionStatus($promo_id) == 'pending') {
     exit;
 }
 
+if (isset($_GET['folderId'])) {
+    $folder_id = ($_GET['folderId']) && $_GET['folderId'] !== 'null' && $_GET['folderId'] !== ''
+        ? (int) $_GET['folderId']
+        : null;
+    $folder_details = Database::getPromotionFolderFiles($folder_id, (int) $promo_id);
+
+    header('Content-Type: application/json');
+    echo json_encode($folder_details);
+    exit;
+}
+
 // Traitement de l'upload
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
     $file = $_FILES['file_upload'];
+    $folder_id = isset($_POST['folder_id']) && $_POST['folder_id'] !== '' && $_POST['folder_id'] !== 'null'
+        ? (int) $_POST['folder_id']
+        : null;
+    $display_name = isset($_POST['file_name']) && trim($_POST['file_name']) !== ''
+        ? trim($_POST['file_name'])
+        : $file['name'];
 
     if ($file['error'] === UPLOAD_ERR_OK) {
         $allowed_types = [
@@ -51,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
             $destination = $upload_dir . $stored_name;
 
             if (move_uploaded_file($file['tmp_name'], $destination)) {
-                Database::createFileRecord($user_id, $promo_id, $file['name'], $stored_name, $mime_type);
+                Database::createFileRecord($user_id, $promo_id, $display_name, $stored_name, $mime_type, $folder_id);
                 $message = t('file_uploaded');
             } else {
                 $error = t('file_save_error');
@@ -63,9 +80,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
         $error = t('file_upload_error');
     }
 }
-
-// Récupération des fichiers approuvés de la promotion
-$approved_files = Database::getPromotionFiles($promo_id);
 
 // Récupération des fichiers en attente de l'utilisateur connecté
 $my_pending_files = Database::getUserPendingFiles($user_id);
@@ -93,26 +107,10 @@ $my_pending_files = Database::getUserPendingFiles($user_id);
 </nav>
 
 <div class="container">
+    <?php if ($message): ?><div class="alert alert-success py-2"><?= $message ?></div><?php endif; ?>
+    <?php if ($error): ?><div class="alert alert-danger py-2"><?= $error ?></div><?php endif; ?>
     <div class="row">
-        <!-- Formulaire d'upload -->
         <div class="col-md-4">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white fw-bold"><?= t('share_document') ?></div>
-                <div class="card-body">
-                    <?php if ($message): ?><div class="alert alert-success py-2"><?= $message ?></div><?php endif; ?>
-                    <?php if ($error): ?><div class="alert alert-danger py-2"><?= $error ?></div><?php endif; ?>
-
-                    <form method="POST" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label class="form-label"><?= t('select_file') ?></label>
-                            <input type="file" class="form-control" name="file_upload" required>
-                            <div class="form-text"><?= t('formats') ?></div>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100"><?= t('submit_for_approval') ?></button>
-                    </form>
-                </div>
-            </div>
-
             <?php if (!empty($my_pending_files)): ?>
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-warning text-dark fw-bold"><?= t('pending_uploads') ?></div>
@@ -131,38 +129,143 @@ $my_pending_files = Database::getUserPendingFiles($user_id);
         <!-- Fichiers partagés dans la promotion -->
         <div class="col-md-8">
             <div class="card shadow-sm">
-                <div class="card-header bg-white fw-bold"><?= t('documents') ?></div>
+                <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center" id="folderHeader">
+                    <span id="folderHeaderLabel"><?= t('folders') ?></span>
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadFileModal"><?= t('share_document') ?></button>
+                </div>
                 <div class="card-body p-0">
-                    <?php if (empty($approved_files)): ?>
-                        <p class="text-center text-muted p-4 mb-0"><?= t('no_documents') ?></p>
-                    <?php else: ?>
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                            <tr>
-                                <th><?= t('file_name') ?></th>
-                                <th><?= t('shared_by') ?></th>
-                                <th><?= t('date') ?></th>
-                                <th class="text-end"><?= t('action') ?></th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <?php foreach ($approved_files as $file): ?>
-                                <tr>
-                                    <td class="align-middle fw-bold"><?= htmlspecialchars($file['original_name']) ?></td>
-                                    <td class="align-middle"><small><?= htmlspecialchars($file['uploader_email']) ?></small></td>
-                                    <td class="align-middle"><small><?= date('d/m/Y', strtotime($file['created_at'])) ?></small></td>
-                                    <td class="text-end">
-                                        <a href="view.php?id=<?= $file['id'] ?>" target="_blank" class="btn btn-sm btn-outline-primary"><?= t('view') ?></a>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
+                    <table class="table table-hover mb-0" id="folderTable">
+                        <thead class="table-light">
+                        <tr>
+                            <th><?= t('name') ?></th>
+                            <th><?= t('created_at') ?></th>
+                            <th><?= t('action') ?></th>
+                        </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
+<div class="modal fade" id="uploadFileModal" tabindex="-1" aria-labelledby="uploadFileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadFileModalLabel"><?= t('share_document') ?></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= t('cancel') ?>"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label"><?= t('select_file') ?></label>
+                        <input type="file" class="form-control" name="file_upload" id="uploadFileInput" required>
+                        <div class="form-text"><?= t('formats') ?></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><?= t('file_name') ?></label>
+                        <input type="text" class="form-control" name="file_name" id="uploadFileNameInput" required>
+                    </div>
+                    <input type="hidden" name="folder_id" id="uploadFolderIdInput" value="">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= t('cancel') ?></button>
+                    <button type="submit" class="btn btn-primary"><?= t('submit_for_approval') ?></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const locale = <?= json_encode(locale()) ?>;
+    const labels = <?= json_encode([
+        'back' => t('back'),
+        'view' => t('view'),
+        'emptyFolder' => t('empty_folder'),
+        'root' => t('root'),
+        'error' => t('generic_error'),
+    ]) ?>;
+
+    function openFolder(folderId) {
+        sessionStorage.setItem('student_current_folder', folderId === null || folderId === undefined ? 'null' : folderId);
+        document.querySelector('#uploadFolderIdInput').value = folderId === null || folderId === undefined ? '' : folderId;
+
+        fetch(`student.php?folderId=${folderId}`)
+            .then(response => response.json())
+            .then(data => {
+                const rows = [];
+                let hasContent = false;
+                const currentFolder = data.folder;
+
+                if (currentFolder) {
+                    const previousFolderId = currentFolder.parent_id !== null ? currentFolder.parent_id : 'null';
+                    rows.push(`
+                        <tr>
+                            <td>
+                                <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="openFolder(${previousFolderId})">
+                                    📁.. / ${labels.back}
+                                </button>
+                            </td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    `);
+                }
+
+                if (data.folders && data.folders.length) {
+                    hasContent = true;
+                    data.folders.forEach(folder => {
+                        rows.push(`
+                            <tr>
+                                <td>
+                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" onclick="openFolder(${folder.id})">
+                                        📁 ${folder.name}
+                                    </button>
+                                </td>
+                                <td>${folder.created_at ? new Date(folder.created_at).toLocaleString(locale) : ''}</td>
+                                <td></td>
+                            </tr>
+                        `);
+                    });
+                }
+
+                if (data.files && data.files.length) {
+                    hasContent = true;
+                    data.files.forEach(file => {
+                        rows.push(`
+                            <tr>
+                                <td>📄 ${file.original_name}</td>
+                                <td>${file.created_at ? new Date(file.created_at).toLocaleString(locale) : ''}</td>
+                                <td><a href="view.php?id=${file.id}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a></td>
+                            </tr>
+                        `);
+                    });
+                }
+
+                if (!hasContent) {
+                    rows.push(`<tr><td colspan="3" class="text-center text-muted py-3">${labels.emptyFolder}</td></tr>`);
+                }
+
+                document.querySelector('#folderTable tbody').innerHTML = rows.join('');
+                document.querySelector('#folderHeaderLabel').textContent =
+                    currentFolder ? currentFolder.name : labels.root;
+            })
+            .catch(error => console.error(labels.error, error));
+    }
+
+    document.querySelector('#uploadFileInput').addEventListener('change', function () {
+        const nameInput = document.querySelector('#uploadFileNameInput');
+        if (this.files.length && !nameInput.value) {
+            nameInput.value = this.files[0].name;
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const savedFolder = sessionStorage.getItem('student_current_folder');
+        openFolder(savedFolder && savedFolder !== 'null' ? Number(savedFolder) : null);
+    });
+</script>
 </body>
 </html>

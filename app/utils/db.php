@@ -124,16 +124,17 @@ class Database
         return $stmt->execute([self::sanitizeInput($promotion_id), $user_id]);
     }
 
-    public static function createFileRecord(int $user_id, int $promotion_id, string $original_name, string $file_path, string $file_type): bool
+    public static function createFileRecord(int $user_id, int $promotion_id, string $original_name, string $file_path, string $file_type, ?int $folder_id = null): bool
     {
         $pdo = self::getConnection();
-        $stmt = $pdo->prepare("INSERT INTO files (user_id, promotion_id, original_name, file_path, file_type, status) VALUES (?, ?, ?, ?, ?, 'pending')");
+        $stmt = $pdo->prepare("INSERT INTO files (user_id, promotion_id, original_name, file_path, file_type, folder_id, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')");
         return $stmt->execute([
             $user_id,
             $promotion_id,
             $original_name,
             $file_path,
-            $file_type
+            $file_type,
+            $folder_id
         ]);
     }
 
