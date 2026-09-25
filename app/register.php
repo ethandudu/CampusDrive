@@ -95,12 +95,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php if ($error): ?>
                         <div class="alert alert-danger py-2"><?= htmlspecialchars($error) ?></div>
                     <?php endif; ?>
-
                     <form method="POST">
                         <div class="mb-3">
+                            <?php if (!$token): ?>
                             <div class="alert alert-primary" role="alert">
                                 <?= t('register_message') ?>
                             </div>
+                            <?php endif; ?>
                         </div>
                         <div class="mb-3">
                             <label class="form-label"><?= t('email') ?></label>
