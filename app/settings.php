@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
     }
 }
 
-// Traitement de la demande de promotion
+// Handle promotion request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'request_promo') {
     if ($user['promotion_id']) {
         $error = t('promotion_already_assigned');
@@ -109,27 +109,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 </div>
             </div>
 
-            <!-- Demande de création de promotion -->
+            <!-- Create promotion -->
             <?php if (!$user['promotion_id']): ?>
-                <div class="card shadow-sm border-primary">
+                <div class="card shadow-sm border-primary mb-4">
                     <div class="card-header bg-primary text-white fw-bold">
                         <?= t('request_promotion') ?>
                     </div>
                     <div class="card-body">
-                        <?php if ($success): ?>
-                            <div class="alert alert-success"><?= $success ?></div>
-                        <?php else: ?>
-                            <?php if ($error): ?><div class="alert alert-danger"><?= $error ?></div><?php endif; ?>
-                            <p><?= t('request_promotion_help') ?></p>
-                            <form method="POST">
-                                <input type="hidden" name="action" value="request_promo">
-                                <div class="mb-3">
-                                    <label class="form-label"><?= t('promotion_name') ?></label>
-                                    <input type="text" class="form-control" name="promo_name" placeholder="<?= t('promotion_placeholder') ?>" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary"><?= t('submit_request') ?></button>
-                            </form>
-                        <?php endif; ?>
+                        <?php if ($error): ?><div class="alert alert-danger"><?= $error ?></div><?php endif; ?>
+                        <p><?= t('request_promotion_help') ?></p>
+                        <form method="POST">
+                            <input type="hidden" name="action" value="request_promo">
+                            <div class="mb-3">
+                                <label class="form-label"><?= t('promotion_name') ?></label>
+                                <input type="text" class="form-control" name="promo_name" placeholder="<?= t('promotion_placeholder') ?>" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><?= t('submit_request') ?></button>
+                        </form>
                     </div>
                 </div>
             <?php endif; ?>
