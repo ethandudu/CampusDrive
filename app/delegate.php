@@ -292,7 +292,7 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
                 </div>
                 <div class="modal-body">
                     <p><?= t('delete_confirmation') ?></p>
-                    <input type="hidden" name="action" value="delete_folder">
+                    <input type="hidden" id="deleteAction" name="action" value="delete_folder">
                     <input type="hidden" name="element_id" value="">
                 </div>
                 <div class="modal-footer">
@@ -385,11 +385,13 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
 
     function deleteFolder(folderId) {
         document.querySelector('#deleteForm input[name="element_id"]').value = folderId;
+        document.querySelector('#deleteForm input[name="action"]').value = 'delete_folder';
         new bootstrap.Modal(document.getElementById('deleteModal')).show();
     }
 
     function deleteFile(fileId) {
         document.querySelector('#deleteForm input[name="element_id"]').value = fileId;
+        document.querySelector('#deleteForm input[name="action"]').value = 'delete_file';
         new bootstrap.Modal(document.getElementById('deleteModal')).show();
     }
 
