@@ -22,6 +22,7 @@ if (isset($_GET['error'])) {
 
 $user = Database::getUserDetails($_SESSION['user_id']);
 
+// Handle language update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_language') {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         die(t('security_error'));
@@ -35,6 +36,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
         $_SESSION['locale'] = $language;
         header('Location: settings.php?success=language_updated');
         exit;
+    }
+}
+
+// Handle password change
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'change_password') {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die(t('security_error'));
+    }
+    $current_password = $_POST['current_password'] ?? '';
+    $new_password = $_POST['new_password'] ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
+
+    if ($new_password !== $confirm_password) {
+        $error = t('password_mismatch');
+    } else {
+        // Update the user's password
+        if(Database::updateUserPassword((int) $user['id'], $current_password, $new_password)) {
+            $success = t('password_change_success');
+        } else {
+            $error = t('password_change_error');
+        }
     }
 }
 
@@ -157,7 +179,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white fw-bold"><?= t('change_password') ?></div>
                 <div class="card-body">
-                    <form method="POST" action="change_password.php">
+                    <form method="POST" action="">
+                        <input type="hidden" name="action" value="change_password">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                        <div class="mb-3">
+                            <label class="form-label"><?= t('current_password') ?></label>
+                            <input type="password" class="form-control" name="current_password" required>
+                        </div>
                         <div class="mb-3">
                             <label class="form-label"><?= t('new_password') ?></label>
                             <input type="password" class="form-control" name="new_password" required>

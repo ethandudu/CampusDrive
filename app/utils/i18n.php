@@ -77,7 +77,11 @@ function t(string $key, array $replacements = []): string
             'student' => 'Étudiant', 'delegate' => 'Délégué', 'admin' => 'Administrateur',
             'invalid_email_domain' => 'Domaine e-mail invalide. Veuillez utiliser un e-mail d’une université autorisée.',
             'email_already_invited' => 'Cette adresse e-mail a déjà été invitée.',
-            'register_message' => 'Ne créez un compte que si vous souhaitez être responsable de la promotion. Sinon, attendez que le délégué vous invite et utilisez le lien d’invitation.'
+            'register_message' => 'Ne créez un compte que si vous souhaitez être responsable de la promotion. Sinon, attendez que le délégué vous invite et utilisez le lien d’invitation.',
+            'password_mismatch' => 'Le mot de passe et sa confirmation ne correspondent pas.',
+            'password_change_success' => 'Mot de passe modifié avec succès ! Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.',
+            'password_change_error' => 'Erreur lors de la modification du mot de passe.',
+            'current_password' => 'Mot de passe actuel',
         ],
         'en' => [
             'login' => 'Sign in', 'email' => 'Email address', 'password' => 'Password',
@@ -109,8 +113,7 @@ function t(string $key, array $replacements = []): string
             'language' => 'Language', 'language_help' => 'Choose the interface language.',
             'save' => 'Save', 'language_updated' => 'Language updated.',
             'invalid_language' => 'The selected language is not supported.',
-            'change_password' => 'Change my password', 'new_password' => 'New password',
-            'confirm_password' => 'Confirm new password',
+            'change_password' => 'Change my password',
             'unauthorized_access' => 'Unauthorized access.', 'file_not_found' => 'File not found.',
             'file_access_denied' => 'You do not have access to this file.',
             'file_pending_approval' => 'This file is awaiting approval.',
@@ -143,7 +146,13 @@ function t(string $key, array $replacements = []): string
             'student' => 'Student', 'delegate' => 'Delegate', 'admin' => 'Administrator',
             'invalid_email_domain' => 'Invalid email domain. Please use an university email.',
             'email_already_invited' => 'This email address has already been invited.',
-            'register_message' => 'Only create an account if you want to be responsible for the promotion. Otherwise, wait for the delegate to invite you and use the invitation link.'
+            'register_message' => 'Only create an account if you want to be responsible for the promotion. Otherwise, wait for the delegate to invite you and use the invitation link.',
+            'current_password' => 'Current password',
+            'new_password' => 'New password',
+            'confirm_password' => 'Confirm password',
+            'password_mismatch' => 'The password and its confirmation do not match.',
+            'password_change_success' => 'Password changed successfully! You can now sign in with your new password.',
+            'password_change_error' => 'An error occurred while changing the password.',
         ],
     ];
 

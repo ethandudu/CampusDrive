@@ -159,6 +159,24 @@ class Database
         return null;
     }
 
+    public static function updateUserPassword(int $userId, string $currentPassword, string $newPassword): bool
+    {
+        $currentPassword = self::sanitizeInput($currentPassword);
+        $newPassword = self::sanitizeInput($newPassword);
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch();
+
+        if (!$user || !password_verify($currentPassword, $user['password'])) {
+            return false; // Current password is incorrect
+        }
+
+        $hashedNewPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+        $updateStmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+        return $updateStmt->execute([$hashedNewPassword, $userId]);
+    }
+
     public static function getPromotionFiles(int $promotion_id): array
     {
         $pdo = self::getConnection();
