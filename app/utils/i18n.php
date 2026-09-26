@@ -10,7 +10,11 @@ function locale(): string
     return array_key_exists($locale, SUPPORTED_LOCALES) ? $locale : DEFAULT_LOCALE;
 }
 
-function t(string $key, array $replacements = []): string
+/**
+ * Returns the full translations map, keyed by locale then by translation key.
+ * Exposed so translation completeness can be verified (e.g. in tests).
+ */
+function translations(): array
 {
     static $translations = [
         'fr' => [
@@ -155,6 +159,13 @@ function t(string $key, array $replacements = []): string
             'password_change_error' => 'An error occurred while changing the password.',
         ],
     ];
+
+    return $translations;
+}
+
+function t(string $key, array $replacements = []): string
+{
+    $translations = translations();
 
     $text = $translations[locale()][$key] ?? $translations[DEFAULT_LOCALE][$key] ?? $key;
 
