@@ -35,7 +35,7 @@ final class DatabaseIntegrationTest extends TestCase
         $email = 'integration_' . bin2hex(random_bytes(4)) . '@example.com';
         $password = password_hash('Secret123!', PASSWORD_DEFAULT);
 
-        $this->assertTrue(Database::createUser($email, $password, null));
+        $this->assertTrue(Database::createUser($email, $password, null, 'delegate'));
 
         $user = Database::loginUser($email, 'Secret123!');
         $this->assertNotNull($user);
@@ -56,7 +56,7 @@ final class DatabaseIntegrationTest extends TestCase
     public function testPromotionLifecycle(): void
     {
         $email = 'delegate_' . bin2hex(random_bytes(4)) . '@example.com';
-        Database::createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null);
+        Database::createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'delegate');
         $user = Database::loginUser($email, 'Secret123!');
 
         $_SESSION['user_id'] = $user['id'];
@@ -76,7 +76,7 @@ final class DatabaseIntegrationTest extends TestCase
     public function testFolderCreationAndListing(): void
     {
         $email = 'folderowner_' . bin2hex(random_bytes(4)) . '@example.com';
-        Database::createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null);
+        Database::createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'delegate');
         $user = Database::loginUser($email, 'Secret123!');
         $_SESSION['user_id'] = $user['id'];
 
