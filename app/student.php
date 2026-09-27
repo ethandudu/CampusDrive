@@ -33,7 +33,7 @@ if (isset($_GET['folderId'])) {
     exit;
 }
 
-// Traitement de l'upload
+// Upload file handling
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
     $file = $_FILES['file_upload'];
     $folder_id = isset($_POST['folder_id']) && $_POST['folder_id'] !== '' && $_POST['folder_id'] !== 'null'
@@ -263,7 +263,8 @@ $my_pending_files = Database::getUserPendingFiles($user_id);
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        const savedFolder = sessionStorage.getItem('student_current_folder');
+        const storageKey = 'student_current_folder_<?= (int) $promo_id ?>';
+        const savedFolder = sessionStorage.getItem(storageKey);
         openFolder(savedFolder && savedFolder !== 'null' ? Number(savedFolder) : null);
     });
 </script>
