@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
 
 $my_pending_files = Database::getUserPendingFiles($user_id);
 if (!$my_pending_files) {
-    $my_pending_files = ['original_name' => t('no_pending_uploads')];
+    $my_pending_files = [['original_name' => t('no_pending_uploads')]];
 }
 ?>
 <!DOCTYPE html>

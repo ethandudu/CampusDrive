@@ -86,6 +86,7 @@ function translations(): array
             'password_change_success' => 'Mot de passe modifié avec succès ! Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.',
             'password_change_error' => 'Erreur lors de la modification du mot de passe.',
             'current_password' => 'Mot de passe actuel',
+            'no_pending_uploads' => 'Aucun envoi en attente.',
         ],
         'en' => [
             'login' => 'Sign in', 'email' => 'Email address', 'password' => 'Password',
@@ -157,6 +158,7 @@ function translations(): array
             'password_mismatch' => 'The password and its confirmation do not match.',
             'password_change_success' => 'Password changed successfully! You can now sign in with your new password.',
             'password_change_error' => 'An error occurred while changing the password.',
+            'no_pending_uploads' => 'No pending uploads.',
         ],
     ];
 
