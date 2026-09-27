@@ -86,7 +86,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
 
 $my_pending_files = Database::getUserPendingFiles($user_id);
 if (!$my_pending_files) {
+    $count_pending = 0;
     $my_pending_files = [['original_name' => t('no_pending_uploads')]];
+} else {
+    $count_pending = count($my_pending_files);
 }
 ?>
 <!DOCTYPE html>
@@ -118,11 +121,11 @@ if (!$my_pending_files) {
         <div class="accordion mb-4">
             <div class="accordion-item">
                 <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                        <?= t('pending_uploads')?>
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                        <?= t('pending_uploads')?> (<?= $count_pending ?>)
                     </button>
                 </h2>
-                <div id="collapseOne" class="accordion-collapse collapse show">
+                <div id="collapseOne" class="accordion-collapse collapse">
                     <div class="accordion-body">
                         <ul class="list-group list-group-flush">
                             <?php foreach ($my_pending_files as $p_file): ?>
