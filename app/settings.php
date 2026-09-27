@@ -4,6 +4,9 @@ require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 
 if (!isset($_SESSION['user_id'])) { header('Location: login.php'); exit; }
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 $success = ''; $error = '';
 if (isset($_GET['error'])) {
@@ -141,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         <?php if ($error): ?><div class="alert alert-danger"><?= $error ?></div><?php endif; ?>
                         <p><?= t('request_promotion_help') ?></p>
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                             <input type="hidden" name="action" value="request_promo">
                             <div class="mb-3">
                                 <label class="form-label"><?= t('promotion_name') ?></label>
@@ -159,6 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 <div class="card-header bg-white fw-bold"><?= t('settings') ?></div>
                 <div class="card-body">
                     <form method="POST">
+                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                         <input type="hidden" name="action" value="update_language">
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                         <div class="mb-3">

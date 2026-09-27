@@ -263,6 +263,7 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
         <div class="modal-content">
             <form id="createFolderForm" method="POST">
                 <div class="modal-header">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                     <h5 class="modal-title" id="createFolderModalLabel"><?= t('new_folder') ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= t('cancel') ?>"></button>
                 </div>
@@ -287,6 +288,7 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
         <div class="modal-content">
             <form id="deleteForm" method="POST">
                 <div class="modal-header">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                     <h5 class="modal-title" id="deleteModalLabel"><?= t('delete_item') ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= t('cancel') ?>"></button>
                 </div>

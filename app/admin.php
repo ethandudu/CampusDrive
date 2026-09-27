@@ -5,20 +5,25 @@ require_once 'utils/i18n.php';
 require_once 'utils/mail.php';
 require_once 'utils/emailTemplates/promotion_activated.php';
 
-// Sécurisation : seul l'admin peut accéder à cette page
+// Check permissions: only admin can access this page
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header('Location: login.php');
     exit;
 }
 
-// Validation d'une promotion et attribution du rôle délégué
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// approve promotion request
 if (isset($_POST['approve_promo_id'])) {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die(t('security_error'));
+    }
     $promo_id = (int) $_POST['approve_promo_id'];
     $promo_to_activate = Database::getPromotionDetails($promo_id);
 
     Database::updatePromotionStatus($promo_id, 'active');
-
-//    Database::attachUserToPromotion($_SESSION['user_id'], $promo_id);
 
     if ($promo_to_activate && !empty($promo_to_activate['created_by'])) {
         $requester = Database::getUserDetails((string) $promo_to_activate['created_by']);
@@ -82,6 +87,7 @@ $promotions = Database::getPendingPromotions();
                             <td class="align-middle"><?= date('d/m/Y H:i', strtotime($promo['created_at'])) ?></td>
                             <td class="text-end">
                                 <form method="POST" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                     <input type="hidden" name="approve_promo_id" value="<?= $promo['id'] ?>">
                                     <button type="submit" class="btn btn-success btn-sm"><?= t('approve') ?></button>
                                 </form>
