@@ -35,6 +35,9 @@ if (isset($_GET['folderId'])) {
 
 // Upload file handling
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die(t('security_error'));
+    }
     $file = $_FILES['file_upload'];
     $folder_id = isset($_POST['folder_id']) && $_POST['folder_id'] !== '' && $_POST['folder_id'] !== 'null'
         ? (int) $_POST['folder_id']
