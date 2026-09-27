@@ -43,7 +43,7 @@ class Database
         return $stmt->fetch() ?: null;
     }
 
-    public static function createUser(string $email, string $password, ?int $promotion_id): bool
+    public static function createUser(string $email, string $password, ?int $promotion_id, string $role): bool
     {
         if (!self::validateEmail($email)) {
             throw new InvalidArgumentException("Adresse email invalide.");
@@ -52,10 +52,13 @@ class Database
         if (self::isEmailRegistered($email)) {
             throw new InvalidArgumentException("Cette adresse email est déjà utilisée.");
         }
+        if (!in_array($role, ['student', 'delegate'], true)) {
+            throw new InvalidArgumentException('Invalid role.');
+        }
 
         $pdo = self::getConnection();
-        $stmt = $pdo->prepare("INSERT INTO users (email, password, role, promotion_id) VALUES (?, ?, 'student', ?)");
-        return $stmt->execute([self::sanitizeInput($email), $password, self::sanitizeInput($promotion_id)]);
+        $stmt = $pdo->prepare("INSERT INTO users (email, password, role, promotion_id) VALUES (?, ?, ?, ?)");
+        return $stmt->execute([self::sanitizeInput($email), $password, self::sanitizeInput($role), self::sanitizeInput($promotion_id)]);
     }
 
     public static function getUserDetails(string $user_id): ?array

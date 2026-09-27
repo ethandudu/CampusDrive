@@ -25,8 +25,10 @@ if (isset($_GET['ShowCaptcha'])) {
 
 $message = ''; $error = '';
 $token = htmlspecialchars(trim($_GET['token'] ?? ''));
+$invitation = null;
 $invited_email = '';
 $promo_id = null;
+$role = 'delegate';
 
 if ($token) {
     $invitation = Database::getInvitationByToken($token);
@@ -60,7 +62,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$error) {
         try {
-            if (Database::createUser($email, $password, $promo_id)) {
+            if ($token && is_array($invitation)) {
+                $role = $invitation['role'] ?? 'student';
+            }
+            if (Database::createUser($email, $password, $promo_id, $role)) {
                 Database::markInvitationAsUsed($token);
                 $welcomeEmail = welcomeEmailTemplate($email);
                 (new Mailer)->sendMail($email, $welcomeEmail['subject'], $welcomeEmail['body']);
