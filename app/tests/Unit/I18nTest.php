@@ -97,4 +97,68 @@ final class I18nTest extends TestCase
             }
         }
     }
+
+    /**
+     * Scans every PHP source file (excluding vendor/tests) for calls to t('some_key')
+     * with a literal string argument, and asserts each referenced key actually exists
+     * in the default locale's translation map, so a typo/rename never silently falls
+     * back to displaying the raw key to users.
+     */
+    public function testEveryLiteralTranslationCallUsesAnExistingKey(): void
+    {
+        $appDir = __DIR__ . '/../..';
+        $referenceKeys = array_keys(translations()[DEFAULT_LOCALE]);
+
+        $usedKeys = [];
+        foreach ($this->phpSourceFiles($appDir) as $file) {
+            $content = file_get_contents($file);
+            if (preg_match_all('/\bt\(\s*([\'"])([a-zA-Z0-9_]+)\1/', $content, $matches)) {
+                foreach ($matches[2] as $key) {
+                    $usedKeys[$key][] = $file;
+                }
+            }
+        }
+
+        $this->assertNotEmpty($usedKeys, 'Expected to find at least one call to t() with a literal key in the app source.');
+
+        $missing = [];
+        foreach ($usedKeys as $key => $files) {
+            if (!in_array($key, $referenceKeys, true)) {
+                $missing[] = sprintf('"%s" (used in %s)', $key, implode(', ', array_unique($files)));
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $missing,
+            "The following t() calls reference translation keys that do not exist:\n" . implode("\n", $missing)
+        );
+    }
+
+    /**
+     * @return iterable<string>
+     */
+    private function phpSourceFiles(string $dir): iterable
+    {
+        $excluded = ['vendor', 'tests', 'uploads', '.phpunit.cache'];
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveCallbackFilterIterator(
+                new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
+                function (\SplFileInfo $file) use ($excluded) {
+                    if ($file->isDir()) {
+                        return !in_array($file->getFilename(), $excluded, true);
+                    }
+                    return true;
+                }
+            )
+        );
+
+        foreach ($iterator as $file) {
+            /** @var \SplFileInfo $file */
+            if ($file->isFile() && $file->getExtension() === 'php') {
+                yield $file->getPathname();
+            }
+        }
+    }
 }
