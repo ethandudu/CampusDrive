@@ -81,8 +81,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
     }
 }
 
-// Récupération des fichiers en attente de l'utilisateur connecté
 $my_pending_files = Database::getUserPendingFiles($user_id);
+if (!$my_pending_files) {
+    $my_pending_files = ['original_name' => t('no_pending_uploads')];
+}
 ?>
 <!DOCTYPE html>
 <html lang="<?= locale() ?>">
@@ -110,24 +112,31 @@ $my_pending_files = Database::getUserPendingFiles($user_id);
     <?php if ($message): ?><div class="alert alert-success py-2"><?= $message ?></div><?php endif; ?>
     <?php if ($error): ?><div class="alert alert-danger py-2"><?= $error ?></div><?php endif; ?>
     <div class="row">
-        <div class="col-md-4">
-            <?php if (!empty($my_pending_files)): ?>
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-warning text-dark fw-bold"><?= t('pending_uploads') ?></div>
-                    <ul class="list-group list-group-flush">
-                        <?php foreach ($my_pending_files as $p_file): ?>
+        <div class="accordion mb-4">
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                        <?= t('pending_uploads')?>
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show">
+                    <div class="accordion-body">
+                        <ul class="list-group list-group-flush">
+                            <?php foreach ($my_pending_files as $p_file): ?>
                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <small class="text-truncate" style="max-width: 180px;"><?= htmlspecialchars($p_file['original_name']) ?></small>
-                                <span class="badge bg-secondary"><?= t('pending') ?></span>
+                                <small class="text-truncate"><?php echo htmlspecialchars($p_file['original_name']) ?></small>
+                                <span class="badge bg-secondary"><?php echo t('pending') ?></span>
                             </li>
-                        <?php endforeach; ?>
-                    </ul>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
                 </div>
-            <?php endif; ?>
+            </div>
         </div>
-
-        <!-- Fichiers partagés dans la promotion -->
-        <div class="col-md-8">
+    </div>
+    <div class="row">
+        <!-- Promotion folders and files -->
+        <div class="col">
             <div class="card shadow-sm">
                 <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center" id="folderHeader">
                     <span id="folderHeaderLabel"><?= t('folders') ?></span>
