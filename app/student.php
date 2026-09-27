@@ -162,6 +162,7 @@ if (!$my_pending_files) {
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                 <div class="modal-header">
                     <h5 class="modal-title" id="uploadFileModalLabel"><?= t('share_document') ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= t('cancel') ?>"></button>

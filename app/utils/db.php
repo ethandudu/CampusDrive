@@ -120,13 +120,6 @@ class Database
         return $stmt->fetchAll();
     }
 
-    public static function attachUserToPromotion(int $user_id, int $promotion_id): bool
-    {
-        $pdo = self::getConnection();
-        $stmt = $pdo->prepare("UPDATE users SET promotion_id = ? WHERE id = ?");
-        return $stmt->execute([self::sanitizeInput($promotion_id), $user_id]);
-    }
-
     public static function createFileRecord(int $user_id, int $promotion_id, string $original_name, string $file_path, string $file_type, ?int $folder_id = null): bool
     {
         $pdo = self::getConnection();
