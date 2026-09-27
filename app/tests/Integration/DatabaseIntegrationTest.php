@@ -35,7 +35,7 @@ final class DatabaseIntegrationTest extends TestCase
         $email = 'integration_' . bin2hex(random_bytes(4)) . '@example.com';
         $password = password_hash('Secret123!', PASSWORD_DEFAULT);
 
-        $this->assertTrue(Database::createUser($email, $password, null, 'delegate'));
+        $this->assertTrue(Database::createUser($email, $password, null, 'student'));
 
         $user = Database::loginUser($email, 'Secret123!');
         $this->assertNotNull($user);
