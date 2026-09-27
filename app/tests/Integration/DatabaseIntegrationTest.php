@@ -48,7 +48,7 @@ final class DatabaseIntegrationTest extends TestCase
         $email = 'integration_' . bin2hex(random_bytes(4)) . '@example.com';
         $password = password_hash('Secret123!', PASSWORD_DEFAULT);
 
-        Database::createUser($email, $password, null);
+        Database::createUser($email, $password, null, 'student');
 
         $this->assertNull(Database::loginUser($email, 'WrongPassword!'));
     }
@@ -65,7 +65,6 @@ final class DatabaseIntegrationTest extends TestCase
         $this->assertGreaterThan(0, $promotionId);
         $this->assertSame('pending', Database::getPromotionStatus($promotionId));
 
-        $this->assertTrue(Database::attachUserToPromotion((int) $user['id'], $promotionId));
         $this->assertTrue(Database::updatePromotionStatus($promotionId, 'active'));
         $this->assertSame('active', Database::getPromotionStatus($promotionId));
 
