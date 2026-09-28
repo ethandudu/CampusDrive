@@ -1,5 +1,5 @@
 CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT (UUID()),
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     role ENUM('admin', 'delegate', 'student') NOT NULL DEFAULT 'student',
@@ -9,10 +9,10 @@ CREATE TABLE users (
 );
 
 CREATE TABLE promotions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT (UUID()),
     name VARCHAR(255) NOT NULL,
     status ENUM('pending', 'active') DEFAULT 'pending',
-    created_by INT NOT NULL,
+    created_by UUID NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -22,9 +22,9 @@ ALTER TABLE users
     FOREIGN KEY (promotion_id) REFERENCES promotions(id) ON DELETE SET NULL;
 
 CREATE TABLE invitations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT (UUID()),
     email VARCHAR(255) NOT NULL,
-    promotion_id INT NOT NULL,
+    promotion_id UUID NOT NULL,
     token VARCHAR(64) UNIQUE NOT NULL,
     is_used BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
