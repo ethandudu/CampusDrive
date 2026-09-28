@@ -18,7 +18,7 @@ require_once 'utils/session.php';
     <h2 class="h4 mt-4">1. Responsable de traitement</h2>
     <p>Le traitement des données personnelles collectées sur le site est effectué sous la responsabilité de :</p>
     <p><strong>Responsable du traitement :</strong> Ethan DUAULT, agissant à titre individuel.<br>
-    <strong>Adresse e-mail de contact :</strong> <a href="mailto:contact@campusdrive.com">contact@campusdrive.com</a></p>
+    <strong>Adresse e-mail de contact :</strong> <a href="mailto:contact@campusdrive.fr">contact@campusdrive.fr</a></p>
 
     <h2 class="h4 mt-4">2. Données personnelles collectées</h2>
     <p>Le Service veille à ne collecter que les données strictement nécessaires au bon fonctionnement de la plateforme (principe de minimisation) :</p>
@@ -63,8 +63,8 @@ require_once 'utils/session.php';
         <li><strong>Droit à la limitation du traitement et droit d’opposition.</strong></li>
     </ul>
     <p><strong>Comment exercer vos droits ?</strong></p>
-    <p>Pour exercer l’un de ces droits, il vous suffit de contacter le responsable du traitement à l’adresse e-mail dédiée :<br>
-    📧 <a href="mailto:abuse@campusdrive.com">abuse@campusdrive.com</a></p>
+    <p>Pour exercer l’un de ces droits, il vous suffit de contacter le responsable du traitement à l’adresse e-mail :<br>
+    📧 <a href="mailto:contact@campusdrive.fr">contact@campusdrive.fr</a></p>
     <p>Si vous estimez, après nous avoir contactés, que vos droits ne sont pas respectés, vous pouvez adresser une réclamation auprès de la CNIL (Commission Nationale de l’Informatique et des Libertés - <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer">www.cnil.fr</a>).</p>
 </div></article></main>
 <footer class="container pb-4 small"><a href="contact.php">Contact</a> · <a href="cgu.php">CGU</a></footer>
