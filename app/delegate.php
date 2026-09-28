@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Delete file
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_file') {
-    $file_id = (int) $_POST['element_id'];
+    $file_id = (string) $_POST['element_id'];
     Database::rejectPromotionFile($file_id);
 }
 
@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         die(t('security_error'));
     }
-    $file_id = (int) $_POST['file_id'];
+    $file_id = (string) $_POST['file_id'];
     $file = Database::getFile($file_id);
     $uploader = $file ? Database::getUserDetails((string) $file['user_id']) : null;
 
