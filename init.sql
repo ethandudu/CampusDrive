@@ -47,7 +47,7 @@ CREATE TABLE files (
     original_name VARCHAR(255) NOT NULL,
     file_path VARCHAR(255) NOT NULL,
     file_type VARCHAR(50) NOT NULL,
-    folder_id INT DEFAULT NULL,
+    folder_id UUID DEFAULT NULL,
     status ENUM('pending', 'approved') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_files_folder FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL,
