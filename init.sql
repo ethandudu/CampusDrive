@@ -12,9 +12,9 @@ CREATE TABLE promotions (
     id UUID PRIMARY KEY DEFAULT (UUID()),
     name VARCHAR(255) NOT NULL,
     status ENUM('pending', 'active') DEFAULT 'pending',
-    created_by UUID NOT NULL,
+    created_by UUID DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 ALTER TABLE users
@@ -42,7 +42,7 @@ CREATE TABLE folders (
 
 CREATE TABLE files (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id UUID NOT NULL,
+    user_id UUID,
     promotion_id UUID NOT NULL,
     original_name VARCHAR(255) NOT NULL,
     file_path VARCHAR(255) NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE files (
     status ENUM('pending', 'approved') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_files_folder FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (promotion_id) REFERENCES promotions(id) ON DELETE CASCADE
 );
 
