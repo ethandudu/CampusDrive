@@ -41,7 +41,7 @@ CREATE TABLE folders (
 );
 
 CREATE TABLE files (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT (UUID()),
     user_id UUID,
     promotion_id UUID NOT NULL,
     original_name VARCHAR(255) NOT NULL,

@@ -298,7 +298,7 @@ class Database
         $fileIds = $filesStmt->fetchAll(PDO::FETCH_COLUMN);
 
         foreach ($fileIds as $fileId) {
-            self::rejectPromotionFile((int) $fileId);
+            self::rejectPromotionFile((string) $fileId);
         }
 
         $stmt = $pdo->prepare("DELETE FROM folders WHERE id = ?");
@@ -321,14 +321,14 @@ class Database
         return $stmt->fetchAll();
     }
 
-    public static function approvePromotionFile(int $file_id): bool
+    public static function approvePromotionFile(string $file_id): bool
     {
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("UPDATE files SET status = 'approved' WHERE id = ?");
         return $stmt->execute([self::sanitizeInput($file_id)]);
     }
 
-    public static function rejectPromotionFile(int $file_id): bool
+    public static function rejectPromotionFile(string $file_id): bool
     {
         $pdo = self::getConnection();
         $fileStmt = $pdo->prepare("SELECT file_path FROM files WHERE id = ?");
@@ -346,7 +346,7 @@ class Database
         return $stmt->execute([$file_id]);
     }
 
-    public static function getFile(int $file_id): ?array
+    public static function getFile(string $file_id): ?array
     {
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("SELECT * FROM files WHERE id = ?");
