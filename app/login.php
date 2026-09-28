@@ -2,6 +2,8 @@
 require_once 'utils/db.php';
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
+$compose = json_decode(file_get_contents(__DIR__ . '/composer.json'), true);
+$appVersion = is_array($compose) ? ($compose['version'] ?? '') : '';
 $message = '';
 $error = '';
 
@@ -75,6 +77,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </form>
                     <div class="mt-3 text-center">
                         <a href="register.php" class="text-decoration-none"><?= t('create_account') ?></a>
+                    </div>
+<!--                    version footer-->
+                    <div class="mt-3 text-center text-muted">
+                        <?php if ($appVersion !== ''): ?>
+                            Version <?= htmlspecialchars((string) $appVersion, ENT_QUOTES, 'UTF-8') ?>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

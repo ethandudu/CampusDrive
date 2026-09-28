@@ -2,6 +2,8 @@
     "name": "campusdrive/app",
     "description": "CampusDrive application",
     "type": "project",
+    "license": "AGPL-3.0",
+    "version": "0.1.0",
     "require": {
         "php": ">=8.5",
         "phpmailer/phpmailer": "^7.1",
