@@ -4,7 +4,7 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL,
     role ENUM('admin', 'delegate', 'student') NOT NULL DEFAULT 'student',
     language VARCHAR(5) NOT NULL DEFAULT 'fr',
-    promotion_id INT DEFAULT NULL,
+    promotion_id UUID DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -34,7 +34,7 @@ CREATE TABLE invitations (
 CREATE TABLE folders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     parent_id INT DEFAULT NULL,
-    promotion_id INT NOT NULL,
+    promotion_id UUID NOT NULL,
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (promotion_id) REFERENCES promotions(id) ON DELETE CASCADE
