@@ -22,7 +22,7 @@ if ($_SESSION['role'] !== 'admin' && $_SESSION['promotion_id'] !== $file['promot
 }
 
 // Un étudiant ne peut voir le fichier que s'il est approuvé ou s'il en est l'auteur
-if ($file['status'] !== 'approved' && $_SESSION['user_id'] !== $file['user_id'] && $_SESSION['role'] !== 'delegue') {
+if ($file['status'] !== 'approved' && $_SESSION['user_id'] !== $file['user_id'] && $_SESSION['role'] !== 'delegate') {
     die(t('file_pending_approval'));
 }
 
