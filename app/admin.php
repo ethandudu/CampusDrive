@@ -65,38 +65,68 @@ $promotions = Database::getPendingPromotions();
         <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
     <?php endif; ?>
 
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <?php if (empty($promotions)): ?>
-                <div class="p-4 text-center text-muted"><?= t('no_pending_promotions') ?></div>
-            <?php else: ?>
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                    <tr>
-                        <th>#</th>
-                        <th><?= t('promotion_name') ?></th>
-                        <th><?= t('promotion_request_date') ?></th>
-                        <th class="text-end"><?= t('action') ?></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($promotions as $promo): ?>
+    <div class="row">
+<!--        statistics cards-->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><?= t('total_users') ?></h5>
+                    <p class="card-text fs-4"><?= Database::getTotalUsers() ?></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><?= t('total_promotions') ?></h5>
+                    <p class="card-text fs-4"><?= Database::getTotalPromotions() ?></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><?= t('total_files') ?></h5>
+                    <p class="card-text fs-4"><?= Database::getTotalFiles() ?></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <?php if (empty($promotions)): ?>
+                    <div class="p-4 text-center text-muted"><?= t('no_pending_promotions') ?></div>
+                <?php else: ?>
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
                         <tr>
-                            <td class="align-middle"><?= $promo['id'] ?></td>
-                            <td class="align-middle fw-bold"><?= htmlspecialchars($promo['name']) ?></td>
-                            <td class="align-middle"><?= date('d/m/Y H:i', strtotime($promo['created_at'])) ?></td>
-                            <td class="text-end">
-                                <form method="POST" class="d-inline">
-                                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                                    <input type="hidden" name="approve_promo_id" value="<?= $promo['id'] ?>">
-                                    <button type="submit" class="btn btn-success btn-sm"><?= t('approve') ?></button>
-                                </form>
-                            </td>
+                            <th>#</th>
+                            <th><?= t('promotion_name') ?></th>
+                            <th><?= t('promotion_request_date') ?></th>
+                            <th class="text-end"><?= t('action') ?></th>
                         </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($promotions as $promo): ?>
+                            <tr>
+                                <td class="align-middle"><?= $promo['id'] ?></td>
+                                <td class="align-middle fw-bold"><?= htmlspecialchars($promo['name']) ?></td>
+                                <td class="align-middle"><?= date('d/m/Y H:i', strtotime($promo['created_at'])) ?></td>
+                                <td class="text-end">
+                                    <form method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                        <input type="hidden" name="approve_promo_id" value="<?= $promo['id'] ?>">
+                                        <button type="submit" class="btn btn-success btn-sm"><?= t('approve') ?></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>

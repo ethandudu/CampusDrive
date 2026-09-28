@@ -373,6 +373,27 @@ class Database
         return $stmt->execute([$promotion_id, $parent_id, self::sanitizeInput($folder_name)]);
     }
 
+    public static function getTotalUsers(): int
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->query("SELECT COUNT(*) FROM users");
+        return (int) $stmt->fetchColumn();
+    }
+
+    public static function getTotalFiles(): int
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->query("SELECT COUNT(*) FROM files");
+        return (int) $stmt->fetchColumn();
+    }
+
+    public static function getTotalPromotions(): int
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->query("SELECT COUNT(*) FROM promotions");
+        return (int) $stmt->fetchColumn();
+    }
+
     private static function getChildFolderIds(int $folder_id): array
     {
         $pdo = self::getConnection();
