@@ -220,6 +220,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         <div class="mb-3">
                             <label class="form-label"><?= t('current_password') ?></label>
                             <input type="password" class="form-control" name="current_password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><?= t('new_password') ?></label>
+                            <input type="password" class="form-control" name="new_password" required>
                             <ul>
                                 <li id="length" class="text-danger"><?= t('password_length') ?></li>
                                 <li id="uppercase" class="text-danger"><?= t('password_uppercase') ?></li>
@@ -227,10 +231,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <li id="number" class="text-danger"><?= t('password_number') ?></li>
                                 <li id="special" class="text-danger"><?= t('password_special') ?></li>
                             </ul>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label"><?= t('new_password') ?></label>
-                            <input type="password" class="form-control" name="new_password" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label"><?= t('confirm_password') ?></label>
@@ -246,7 +246,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 <script>
     <!--    check userpass complexity -->
     document.addEventListener('DOMContentLoaded', function() {
-        const passwordInput = document.querySelector('input[name="password"]');
+        const passwordInput = document.querySelector('input[name="new_password"]');
         const submitButton = document.querySelector('button[type="submit"]');
 
         passwordInput.addEventListener('input', function() {
