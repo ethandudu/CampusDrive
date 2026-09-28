@@ -20,7 +20,7 @@ if (isset($_POST['approve_promo_id'])) {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         die(t('security_error'));
     }
-    $promo_id = (int) $_POST['approve_promo_id'];
+    $promo_id = $_POST['approve_promo_id'];
     $promo_to_activate = Database::getPromotionDetails($promo_id);
 
     Database::updatePromotionStatus($promo_id, 'active');

@@ -43,7 +43,7 @@ class Database
         return $stmt->fetch() ?: null;
     }
 
-    public static function createUser(string $email, string $password, ?int $promotion_id, string $role): bool
+    public static function createUser(string $email, string $password, ?string $promotion_id, string $role): bool
     {
         if (!self::validateEmail($email)) {
             throw new InvalidArgumentException("Adresse email invalide.");
@@ -81,22 +81,27 @@ class Database
         return $stmt->execute([$language, $userId]);
     }
 
-    public static function createPromotion(string $name): int
+    public static function createPromotion(string $name): string
     {
         $pdo = self::getConnection();
-        $stmt = $pdo->prepare("INSERT INTO promotions (name, status, created_by) VALUES (?, 'pending', ?)");
-        $stmt->execute([self::sanitizeInput($name), $_SESSION['user_id']]);
-        return (int)$pdo->lastInsertId();
+        $promotionId = $pdo->query('SELECT UUID()')->fetchColumn();
+        if (!is_string($promotionId)) {
+            throw new RuntimeException('Could not generate a promotion UUID.');
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO promotions (id, name, status, created_by) VALUES (?, ?, 'pending', ?)");
+        $stmt->execute([$promotionId, self::sanitizeInput($name), $_SESSION['user_id']]);
+        return $promotionId;
     }
 
-    public static function updatePromotionStatus(int $promotion_id, string $status): bool
+    public static function updatePromotionStatus(string $promotion_id, string $status): bool
     {
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("UPDATE promotions SET status = ? WHERE id = ?");
         return $stmt->execute([self::sanitizeInput($status), $promotion_id]);
     }
 
-    public static function getPromotionStatus(int $promotion_id): ?string
+    public static function getPromotionStatus(string $promotion_id): ?string
     {
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("SELECT status FROM promotions WHERE id = ?");
@@ -105,7 +110,7 @@ class Database
         return $result ? $result['status'] : null;
     }
 
-    public static function getPromotionDetails(int $promotion_id): ?array
+    public static function getPromotionDetails(string $promotion_id): ?array
     {
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("SELECT * FROM promotions WHERE id = ?");
@@ -120,7 +125,7 @@ class Database
         return $stmt->fetchAll();
     }
 
-    public static function createFileRecord(int $user_id, int $promotion_id, string $original_name, string $file_path, string $file_type, ?int $folder_id = null): bool
+    public static function createFileRecord(int $user_id, string $promotion_id, string $original_name, string $file_path, string $file_type, ?int $folder_id = null): bool
     {
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("INSERT INTO files (user_id, promotion_id, original_name, file_path, file_type, folder_id, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')");
@@ -173,7 +178,7 @@ class Database
         return $updateStmt->execute([$hashedNewPassword, $userId]);
     }
 
-    public static function getPromotionFiles(int $promotion_id): array
+    public static function getPromotionFiles(string $promotion_id): array
     {
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("SELECT f.*, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.status = 'approved' ORDER BY f.created_at DESC");
@@ -181,7 +186,7 @@ class Database
         return $stmt->fetchAll();
     }
 
-    public static function getPromotionFolders(int $promotion_id): array
+    public static function getPromotionFolders(string $promotion_id): array
     {
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("SELECT * FROM folders WHERE promotion_id = ? ORDER BY created_at DESC");
@@ -189,7 +194,7 @@ class Database
         return $stmt->fetchAll();
     }
 
-    public static function getPromotionFolderFiles(?int $folder_id, int $promotion_id): array
+    public static function getPromotionFolderFiles(?int $folder_id, string $promotion_id): array
     {
         $pdo = self::getConnection();
 
@@ -228,7 +233,7 @@ class Database
         $folderStmt->execute([$folder_id]);
         $folder = $folderStmt->fetch();
 
-        if (!$folder || (int) $folder['promotion_id'] !== $promotion_id) {
+        if (!$folder || $folder['promotion_id'] !== $promotion_id) {
             return ['folder' => null, 'parent_folder' => null, 'folders' => [], 'files' => []];
         }
 
@@ -294,7 +299,7 @@ class Database
         return $stmt->fetchAll();
     }
 
-    public static function getPromotionPendingFiles(int $promotion_id): array
+    public static function getPromotionPendingFiles(string $promotion_id): array
     {
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("SELECT f.*, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.status = 'pending' ORDER BY f.created_at ASC");
@@ -335,7 +340,7 @@ class Database
         return $stmt->fetch() ?: null;
     }
 
-    public static function checkIfEmailIsAlreadyInvited(string $email, int $promotion_id): bool
+    public static function checkIfEmailIsAlreadyInvited(string $email, string $promotion_id): bool
     {
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM invitations WHERE email = ? AND promotion_id = ?");
@@ -343,7 +348,7 @@ class Database
         return $stmt->fetchColumn() > 0;
     }
 
-    public static function createInvitation(string $email, int $promotion_id, string $token): bool
+    public static function createInvitation(string $email, string $promotion_id, string $token): bool
     {
         if (!self::validateEmail($email)) {
             throw new InvalidArgumentException("Adresse email invalide.");
@@ -353,7 +358,7 @@ class Database
         return $stmt->execute([self::sanitizeInput($email), $promotion_id, self::sanitizeInput($token)]);
     }
 
-    public static function getPromotionInvitations(int $promotion_id): array
+    public static function getPromotionInvitations(string $promotion_id): array
     {
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("SELECT * FROM invitations WHERE promotion_id = ? ORDER BY created_at DESC");
@@ -361,7 +366,7 @@ class Database
         return $stmt->fetchAll();
     }
 
-    public static function createFolder(int $promotion_id, int|string|null $parent_id, string $folder_name): bool
+    public static function createFolder(string $promotion_id, int|string|null $parent_id, string $folder_name): bool
     {
         if ($parent_id === '' || $parent_id === 'null') {
             $parent_id = null;

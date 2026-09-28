@@ -62,7 +62,10 @@ final class DatabaseIntegrationTest extends TestCase
         $_SESSION['user_id'] = $user['id'];
 
         $promotionId = Database::createPromotion('Integration Test Promotion');
-        $this->assertGreaterThan(0, $promotionId);
+        $this->assertMatchesRegularExpression(
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
+            $promotionId
+        );
         $this->assertSame('pending', Database::getPromotionStatus($promotionId));
 
         $this->assertTrue(Database::updatePromotionStatus($promotionId, 'active'));

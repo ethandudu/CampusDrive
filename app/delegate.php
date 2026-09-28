@@ -35,7 +35,7 @@ if (isset($_GET['folderId'])) {
     $folderId = ($_GET['folderId']) && $_GET['folderId'] !== 'null' && $_GET['folderId'] !== ''
         ? (int) $_GET['folderId']
         : null;
-    $folderDetails = Database::getPromotionFolderFiles($folderId, (int) $_SESSION['promotion_id']);
+    $folderDetails = Database::getPromotionFolderFiles($folderId, $_SESSION['promotion_id']);
 
     header('Content-Type: application/json');
     echo json_encode($folderDetails);

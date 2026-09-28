@@ -26,7 +26,7 @@ if (isset($_GET['folderId'])) {
     $folder_id = ($_GET['folderId']) && $_GET['folderId'] !== 'null' && $_GET['folderId'] !== ''
         ? (int) $_GET['folderId']
         : null;
-    $folder_details = Database::getPromotionFolderFiles($folder_id, (int) $promo_id);
+    $folder_details = Database::getPromotionFolderFiles($folder_id, $promo_id);
 
     header('Content-Type: application/json');
     echo json_encode($folder_details);
@@ -279,7 +279,7 @@ if (!$my_pending_files) {
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        const storageKey = 'student_current_folder_<?= (int) $promo_id ?>';
+        const storageKey = 'student_current_folder_<?= htmlspecialchars($promo_id, ENT_QUOTES, 'UTF-8') ?>';
         const savedFolder = sessionStorage.getItem(storageKey);
         openFolder(savedFolder && savedFolder !== 'null' ? Number(savedFolder) : null);
     });
