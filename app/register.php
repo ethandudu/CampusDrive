@@ -47,6 +47,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die(t('security_error'));
     }
 
+    // Password complexity validation
+    $password = $_POST['password'] ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
+    if ($password !== $confirm_password) {
+        $error = t('password_mismatch');
+    } elseif (strlen($password) < 8 || strlen($password) > 64) {
+        $error = t('password_length');
+    } elseif (!preg_match('/[A-Z]/', $password)) {
+        $error = t('password_uppercase');
+    } elseif (!preg_match('/[a-z]/', $password)) {
+        $error = t('password_lowercase');
+    } elseif (!preg_match('/[0-9]/', $password)) {
+        $error = t('password_number');
+    } elseif (!preg_match('/[!@#$%^&*()-+]/', $password)) {
+        $error = t('password_special');
+    }
+
     $email = htmlspecialchars(trim($_POST['email']));
     $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
     $captcha_input = htmlspecialchars(trim($_POST['captcha'] ?? ''));
@@ -115,6 +132,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="mb-4">
                             <label class="form-label"><?= t('password') ?></label>
                             <input type="password" class="form-control" name="password" required>
+                            <ul>
+                                <li id="length" class="text-danger"><?= t('password_length') ?></li>
+                                <li id="uppercase" class="text-danger"><?= t('password_uppercase') ?></li>
+                                <li id="lowercase" class="text-danger"><?= t('password_lowercase') ?></li>
+                                <li id="number" class="text-danger"><?= t('password_number') ?></li>
+                                <li id="special" class="text-danger"><?= t('password_special') ?></li>
+                            </ul>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label"><?= t('confirm_password') ?></label>
+                            <input type="password" class="form-control" name="confirm_password" required>
                         </div>
                         <div class="mb-4">
                             <label class="form-label"><?= t('verification_code') ?></label>
@@ -130,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <input type="text" class="form-control" name="captcha" required placeholder="<?= t('captcha_placeholder') ?>">
                         </div>
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                        <button type="submit" class="btn btn-primary w-100"><?= t('sign_up') ?></button>
+                        <button type="submit" class="btn btn-primary w-100" disabled><?= t('sign_up') ?></button>
                     </form>
                     <div class="mt-3 text-center">
                         <a href="login.php" class="text-decoration-none"><?= t('already_have_account') ?></a>
@@ -140,5 +168,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 </div>
+<script>
+<!--    check userpass complexity -->
+    document.addEventListener('DOMContentLoaded', function() {
+        const passwordInput = document.querySelector('input[name="password"]');
+        const submitButton = document.querySelector('button[type="submit"]');
+
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            let isValid = true;
+
+            // Check password complexity
+            if (password.length < 8 || password.length > 64) {
+                isValid = false;
+                document.getElementById('length').classList.remove('text-success');
+                document.getElementById('length').classList.add('text-danger');
+            } else {
+                document.getElementById('length').classList.remove('text-danger');
+                document.getElementById('length').classList.add('text-success');
+            }
+            if (!/[A-Z]/.test(password)) {
+                isValid = false;
+                document.getElementById('uppercase').classList.remove('text-success');
+                document.getElementById('uppercase').classList.add('text-danger');
+            } else {
+                document.getElementById('uppercase').classList.remove('text-danger');
+                document.getElementById('uppercase').classList.add('text-success');
+            }
+            if (!/[a-z]/.test(password)) {
+                isValid = false;
+                document.getElementById('lowercase').classList.remove('text-success');
+                document.getElementById('lowercase').classList.add('text-danger');
+            } else {
+                document.getElementById('lowercase').classList.remove('text-danger');
+                document.getElementById('lowercase').classList.add('text-success');
+            }
+            if (!/[0-9]/.test(password)) {
+                isValid = false;
+                document.getElementById('number').classList.remove('text-success');
+                document.getElementById('number').classList.add('text-danger');
+            } else {
+                document.getElementById('number').classList.remove('text-danger');
+                document.getElementById('number').classList.add('text-success');
+            }
+            if (!/[!@#$%^&*()-+]/.test(password)) {
+                isValid = false;
+                document.getElementById('special').classList.remove('text-success');
+                document.getElementById('special').classList.add('text-danger');
+            } else {
+                document.getElementById('special').classList.remove('text-danger');
+                document.getElementById('special').classList.add('text-success');
+            }
+            submitButton.disabled = !isValid;
+        });
+    });
+</script>
 </body>
 </html>

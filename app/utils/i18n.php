@@ -48,7 +48,7 @@ function translations(): array
             'save' => 'Enregistrer', 'language_updated' => 'Langue mise à jour.',
             'invalid_language' => 'La langue sélectionnée n’est pas prise en charge.',
             'change_password' => 'Modifier mon mot de passe', 'new_password' => 'Nouveau mot de passe',
-            'confirm_password' => 'Confirmer le nouveau mot de passe',
+            'confirm_password' => 'Confirmer le mot de passe',
             'unauthorized_access' => 'Accès non autorisé.', 'file_not_found' => 'Fichier introuvable.',
             'file_access_denied' => 'Vous n’avez pas accès à ce fichier.',
             'file_pending_approval' => 'Ce fichier est en attente d’approbation.',
@@ -91,6 +91,11 @@ function translations(): array
             'total_promotions' => 'Nombre total de promotions',
             'total_files' => 'Nombre total de fichiers',
             'total_pending_files' => 'Nombre total de fichiers en attente',
+            'password_length' => 'Entre 8 et 20 caractères',
+            'password_uppercase' => 'Au moins une lettre majuscule',
+            'password_lowercase' => 'Au moins une lettre minuscule',
+            'password_number' => 'Au moins un chiffre',
+            'password_special' => 'Au moins un caractère spécial (ex. !@#$%^&*)',
         ],
         'en' => [
             'login' => 'Sign in', 'email' => 'Email address', 'password' => 'Password',
@@ -167,6 +172,11 @@ function translations(): array
             'total_promotions' => 'Total Promotions',
             'total_files' => 'Total Files',
             'total_pending_files' => 'Total Pending Files',
+            'password_length' => 'Between 8 and 20 characters',
+            'password_uppercase' => 'At least one uppercase letter',
+            'password_lowercase' => 'At least one lowercase letter',
+            'password_number' => 'At least one number',
+            'password_special' => 'At least one special character (e.g. !@#$%^&*)',
         ],
     ];
 
