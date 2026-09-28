@@ -65,4 +65,4 @@ CREATE TABLE logs (
 );
 
 INSERT INTO users (email, password, role)
-VALUES ('admin@campusdrive.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
+VALUES ('admin@campusdrive.fr', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
