@@ -7,7 +7,7 @@ if (!isset($_SESSION['user_id'])) {
     die(t('unauthorized_access'));
 }
 
-$file_id = (int) ($_GET['id'] ?? 0);
+$file_id = (string) ($_GET['id'] ?? 0);
 
 $file = Database::getFile($file_id);
 
