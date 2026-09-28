@@ -24,7 +24,7 @@ if (Database::getPromotionStatus($promo_id) == 'pending') {
 
 if (isset($_GET['folderId'])) {
     $folder_id = ($_GET['folderId']) && $_GET['folderId'] !== 'null' && $_GET['folderId'] !== ''
-        ? (int) $_GET['folderId']
+        ? $_GET['folderId']
         : null;
     $folder_details = Database::getPromotionFolderFiles($folder_id, $promo_id);
 
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
     }
     $file = $_FILES['file_upload'];
     $folder_id = isset($_POST['folder_id']) && $_POST['folder_id'] !== '' && $_POST['folder_id'] !== 'null'
-        ? (int) $_POST['folder_id']
+        ? $_POST['folder_id']
         : null;
     $display_name = isset($_POST['file_name']) && trim($_POST['file_name']) !== ''
         ? trim($_POST['file_name'])
@@ -220,7 +220,7 @@ if (!$my_pending_files) {
                     rows.push(`
                         <tr>
                             <td>
-                                <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="openFolder(${previousFolderId})">
+                                <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="openFolder('${previousFolderId}')">
                                     📁.. / ${labels.back}
                                 </button>
                             </td>
@@ -236,7 +236,7 @@ if (!$my_pending_files) {
                         rows.push(`
                             <tr>
                                 <td>
-                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" onclick="openFolder(${folder.id})">
+                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" onclick="openFolder('${folder.id}')">
                                         📁 ${folder.name}
                                     </button>
                                 </td>

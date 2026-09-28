@@ -33,7 +33,7 @@ if (isset($_GET['success'])) {
 
 if (isset($_GET['folderId'])) {
     $folderId = ($_GET['folderId']) && $_GET['folderId'] !== 'null' && $_GET['folderId'] !== ''
-        ? (int) $_GET['folderId']
+        ? $_GET['folderId']
         : null;
     $folderDetails = Database::getPromotionFolderFiles($folderId, $_SESSION['promotion_id']);
 
@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_folder') {
     $folder_name = trim($_POST['folder_name']);
     $parent_id = isset($_POST['parent_id']) && $_POST['parent_id'] !== '' && $_POST['parent_id'] !== 'null'
-        ? (int) $_POST['parent_id']
+        ? $_POST['parent_id']
         : null;
     if (!empty($folder_name)) {
         Database::createFolder($_SESSION['promotion_id'], $parent_id, $folder_name);
@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Delete folder
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_folder') {
-    $folder_id = (int) $_POST['element_id'];
+    $folder_id = $_POST['element_id'];
     Database::deletePromotionFolder($folder_id);
 }
 
@@ -331,7 +331,7 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
                     rows.push(`
                         <tr>
                             <td>
-                                <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="openFolder(${previousFolderId})">
+                                <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="openFolder('${previousFolderId}')">
                                     📁.. / ${labels.back}
                                 </button>
                             </td>
@@ -347,13 +347,13 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
                         rows.push(`
                             <tr>
                                 <td>
-                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" onclick="openFolder(${folder.id})">
+                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" onclick="openFolder('${folder.id}')">
                                         📁 ${folder.name}
                                     </button>
                                 </td>
                                 <td>${folder.created_at ? new Date(folder.created_at).toLocaleString(locale) : ''}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteFolder(${folder.id})">${labels.delete}</button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteFolder('${folder.id}')">${labels.delete}</button>
                                 </td>
                             </tr>
                         `);
@@ -367,7 +367,7 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
                             <tr>
                                 <td>📄 ${file.original_name}</td>
                                 <td>${file.created_at ? new Date(file.created_at).toLocaleString(locale) : ''}</td>
-                                <td><a href="view.php?id=${file.id}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a><button class="btn btn-sm btn-outline-danger" onclick="deleteFile(${file.id})">${labels.delete}</button></td>
+                                <td><a href="view.php?id=${file.id}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a><button class="btn btn-sm btn-outline-danger" onclick="deleteFile('${file.id}')">${labels.delete}</button></td>
                             </tr>
                         `);
                     });
