@@ -81,7 +81,12 @@ final class DatabaseIntegrationTest extends TestCase
 
         $promotionId = Database::createPromotion('Folder Test Promotion');
 
-        $this->assertTrue(Database::createFolder($promotionId, null, 'Root Folder'));
+        $folderId = Database::createFolder($promotionId, null, 'Root Folder');
+        $this->assertIsString($folderId);
+        $this->assertMatchesRegularExpression(
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
+            $folderId
+        );
 
         $folders = Database::getPromotionFolders($promotionId);
         $this->assertNotEmpty($folders);
