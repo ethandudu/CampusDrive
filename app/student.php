@@ -176,7 +176,7 @@ if (!$my_pending_files) {
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label"><?= t('select_file') ?></label>
-                        <input type="file" class="form-control" name="file_upload" id="uploadFileInput" required>
+                        <input type="file" class="form-control" name="file_upload" id="uploadFileInput" required accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*,video/*">
                         <div class="form-text"><?= t('formats') ?></div>
                     </div>
                     <div class="mb-3">
