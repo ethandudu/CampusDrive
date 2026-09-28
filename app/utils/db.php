@@ -101,6 +101,13 @@ class Database
         return $stmt->execute([self::sanitizeInput($status), $promotion_id]);
     }
 
+    public static function attachUserToPromotion(string $user_id, string $promotion_id): bool
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("UPDATE users SET promotion_id = ? WHERE id = ?");
+        return $stmt->execute([self::sanitizeInput($promotion_id), $user_id]);
+    }
+
     public static function getPromotionStatus(string $promotion_id): ?string
     {
         $pdo = self::getConnection();
@@ -125,7 +132,7 @@ class Database
         return $stmt->fetchAll();
     }
 
-    public static function createFileRecord(int $user_id, string $promotion_id, string $original_name, string $file_path, string $file_type, ?int $folder_id = null): bool
+    public static function createFileRecord(string $user_id, string $promotion_id, string $original_name, string $file_path, string $file_type, ?int $folder_id = null): bool
     {
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("INSERT INTO files (user_id, promotion_id, original_name, file_path, file_type, folder_id, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')");
@@ -291,7 +298,7 @@ class Database
         return $stmt->execute([$folder_id]);
     }
 
-    public static function getUserPendingFiles(int $user_id): array
+    public static function getUserPendingFiles(string $user_id): array
     {
         $pdo = self::getConnection();
         $stmt = $pdo->prepare("SELECT * FROM files WHERE user_id = ? AND status = 'pending' ORDER BY created_at DESC");
