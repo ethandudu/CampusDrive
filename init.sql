@@ -32,8 +32,8 @@ CREATE TABLE invitations (
 );
 
 CREATE TABLE folders (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    parent_id INT DEFAULT NULL,
+    id UUID PRIMARY KEY DEFAULT (UUID()),
+    parent_id UUID DEFAULT NULL,
     promotion_id UUID NOT NULL,
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -42,8 +42,8 @@ CREATE TABLE folders (
 
 CREATE TABLE files (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    promotion_id INT NOT NULL,
+    user_id UUID NOT NULL,
+    promotion_id UUID NOT NULL,
     original_name VARCHAR(255) NOT NULL,
     file_path VARCHAR(255) NOT NULL,
     file_type VARCHAR(50) NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE files (
 
 CREATE TABLE logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id UUID NOT NULL,
     action VARCHAR(255) NOT NULL,
     ip_address VARCHAR(45) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
