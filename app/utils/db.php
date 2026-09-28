@@ -373,14 +373,20 @@ class Database
         return $stmt->fetchAll();
     }
 
-    public static function createFolder(string $promotion_id, int|string|null $parent_id, string $folder_name): bool
+    public static function createFolder(string $promotion_id, int|string|null $parent_id, string $folder_name): string
     {
         if ($parent_id === '' || $parent_id === 'null') {
             $parent_id = null;
         }
         $pdo = self::getConnection();
-        $stmt = $pdo->prepare("INSERT INTO folders (promotion_id, parent_id, name) VALUES (?, ?, ?)");
-        return $stmt->execute([$promotion_id, $parent_id, self::sanitizeInput($folder_name)]);
+        $folderId = $pdo->query('SELECT UUID()')->fetchColumn();
+        if (!is_string($folderId)) {
+            throw new RuntimeException('Could not generate a folder UUID.');
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO folders (id, promotion_id, parent_id, name) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$folderId, $promotion_id, $parent_id, self::sanitizeInput($folder_name)]);
+        return $folderId;
     }
 
     public static function getTotalUsers(): int
