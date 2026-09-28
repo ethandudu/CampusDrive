@@ -42,6 +42,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
     }
 }
 
+// Handle account deletion
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_account') {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die(t('security_error'));
+    }
+    if (Database::deleteUser((string) $user['id'])) {
+        session_destroy();
+        header('Location: index.php');
+        exit;
+    } else {
+        $error = t('account_deletion_error');
+    }
+}
+
 // Handle password change
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'change_password') {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
@@ -159,26 +173,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     </div>
     <div class="row justify-content-center">
         <div class="col-md-4">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white fw-bold"><?= t('settings') ?></div>
-                <div class="card-body">
-                    <form method="POST">
-                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                        <input type="hidden" name="action" value="update_language">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-                        <div class="mb-3">
-                            <label for="language" class="form-label"><?= t('language') ?></label>
-                            <select id="language" name="language" class="form-select">
-                                <?php foreach (SUPPORTED_LOCALES as $code => $label): ?>
-                                    <option value="<?= $code ?>" <?= locale() === $code ? 'selected' : '' ?>><?= $label ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                            <div class="form-text"><?= t('language_help') ?></div>
-                        </div>
-                        <button type="submit" class="btn btn-primary"><?= t('save') ?></button>
-                    </form>
+            <div class="row">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white fw-bold"><?= t('settings') ?></div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                            <input type="hidden" name="action" value="update_language">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                            <div class="mb-3">
+                                <label for="language" class="form-label"><?= t('language') ?></label>
+                                <select id="language" name="language" class="form-select">
+                                    <?php foreach (SUPPORTED_LOCALES as $code => $label): ?>
+                                        <option value="<?= $code ?>" <?= locale() === $code ? 'selected' : '' ?>><?= $label ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="form-text"><?= t('language_help') ?></div>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><?= t('save') ?></button>
+                        </form>
+                    </div>
                 </div>
             </div>
+            <div class="row">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white fw-bold"><?= t('account_deletion') ?></div>
+                    <div class="card-body">
+                        <p><?= t('account_deletion_warning') ?></p>
+                        <form method="POST" action="" onsubmit="return confirm('<?= t('confirm_account_deletion') ?>');">
+                            <input type="hidden" name="action" value="delete_account">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                            <button type="submit" class="btn btn-danger"><?= t('delete_account') ?></button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
         </div>
         <div class="col-md-4">
             <div class="card shadow-sm mb-4">

@@ -61,6 +61,13 @@ class Database
         return $stmt->execute([self::sanitizeInput($email), $password, self::sanitizeInput($role), self::sanitizeInput($promotion_id)]);
     }
 
+    public static function deleteUser(string $user_id): bool
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+        return $stmt->execute([self::sanitizeInput($user_id)]);
+    }
+
     public static function getUserDetails(string $user_id): ?array
     {
         $pdo = self::getConnection();

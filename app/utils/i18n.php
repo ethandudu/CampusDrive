@@ -96,6 +96,9 @@ function translations(): array
             'password_lowercase' => 'Au moins une lettre minuscule',
             'password_number' => 'Au moins un chiffre',
             'password_special' => 'Au moins un caractère spécial (ex. !@#$%^&*)',
+            'account_deletion' => 'Supprimer mon compte', 'account_deletion_warning' => 'Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.',
+            'confirm_account_deletion' => 'Confirmer la suppression du compte',
+            'delete_account' => 'Supprimer le compte'
         ],
         'en' => [
             'login' => 'Sign in', 'email' => 'Email address', 'password' => 'Password',
@@ -177,6 +180,9 @@ function translations(): array
             'password_lowercase' => 'At least one lowercase letter',
             'password_number' => 'At least one number',
             'password_special' => 'At least one special character (e.g. !@#$%^&*)',
+            'account_deletion' => 'Delete my account', 'account_deletion_warning' => 'Are you sure you want to delete your account? This action is irreversible.',
+            'confirm_account_deletion' => 'Confirm account deletion',
+            'delete_account' => 'Delete account'
         ],
     ];
 
