@@ -20,6 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die(t('security_error'));
     }
 
+    if($_POST['action'] === 'change_locale' && isset($_POST['locale'])) {
+        $newLocale = $_POST['locale'];
+        if (array_key_exists($newLocale, SUPPORTED_LOCALES)) {
+            $_SESSION['locale'] = $newLocale;
+        }
+        header('Location: login.php');
+        exit;
+    }
+
     $user = Database::loginUser($_POST['email'], $_POST['password']);
 
     if ($user !== null) {
@@ -63,6 +72,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php if ($error): ?>
                         <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                     <?php endif; ?>
+                    <form method="post" action="login.php">
+                        <div class="mb-3">
+                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                            <input type="hidden" name="action" value="change_locale">
+                            <label for="locale" class="form-label"><?= t('language') ?></label>
+                            <select class="form-select" id="locale" name="locale" onchange="this.form.submit()">
+                                <?php foreach (SUPPORTED_LOCALES as $code => $name): ?>
+                                    <option value="<?= htmlspecialchars($code) ?>" <?= locale() === $code ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($name) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </form>
                     <form method="POST" action="login.php">
                         <div class="mb-3">
                             <label for="email" class="form-label"><?= t('email') ?></label>
@@ -73,12 +96,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <input type="password" class="form-control" id="password" name="password" required>
                         </div>
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                        <input type="hidden" name="action" value="login">
                         <button type="submit" class="btn btn-primary w-100"><?= t('sign_in') ?></button>
                     </form>
                     <div class="mt-3 text-center">
                         <a href="register.php" class="text-decoration-none"><?= t('create_account') ?></a>
                     </div>
-<!--                    version footer-->
                     <div class="mt-3 text-center text-muted">
                         <?php if ($appVersion !== ''): ?>
                             Version <?= htmlspecialchars((string) $appVersion, ENT_QUOTES, 'UTF-8') ?>

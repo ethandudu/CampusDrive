@@ -47,6 +47,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die(t('security_error'));
     }
 
+    if($_POST['action'] === 'change_locale' && isset($_POST['locale'])) {
+        $newLocale = $_POST['locale'];
+        if (array_key_exists($newLocale, SUPPORTED_LOCALES)) {
+            $_SESSION['locale'] = $newLocale;
+        }
+        header('Location: register.php' . ($token ? '?token=' . urlencode($token) : ''));
+        exit;
+    }
+
     // Password complexity validation
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
@@ -117,6 +126,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php if ($error): ?>
                         <div class="alert alert-danger py-2"><?= htmlspecialchars($error) ?></div>
                     <?php endif; ?>
+                    <form method="post" action="register.php">
+                        <div class="mb-3">
+                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                            <input type="hidden" name="action" value="change_locale">
+                            <label for="locale" class="form-label"><?= t('language') ?></label>
+                            <select class="form-select" id="locale" name="locale" onchange="this.form.submit()">
+                                <?php foreach (SUPPORTED_LOCALES as $code => $name): ?>
+                                    <option value="<?= htmlspecialchars($code) ?>" <?= locale() === $code ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($name) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </form>
                     <form method="POST">
                         <div class="mb-3">
                             <?php if (!$token): ?>
