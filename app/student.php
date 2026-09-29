@@ -103,7 +103,8 @@ if (!$my_pending_files) {
 <body class="bg-light">
 <nav class="navbar navbar-dark bg-primary mb-4 shadow">
     <div class="container">
-        <span class="navbar-brand mb-0 h1">CampusDrive - <?= t('student_area') ?></span>
+        <span class="navbar-brand mb-0 h1"><?= t('student_area') ?></span>
+        <img src="assets/img/campusdrivewhite.webp" alt="Logo" class="img-fluid" style="max-height: 50px;">
         <div>
             <a href="student.php" class="btn btn-light btn-sm me-2"><?= t('home') ?></a>
             <?php if ($_SESSION['role'] === 'delegate'): ?>

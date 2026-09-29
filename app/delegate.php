@@ -134,7 +134,8 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
 <body class="bg-light">
 <nav class="navbar navbar-dark bg-success mb-4 shadow">
     <div class="container">
-        <span class="navbar-brand mb-0 h1">CampusDrive - <?= t('delegate_area') ?> (<?= htmlspecialchars($promo['name']) ?>)</span>
+        <span class="navbar-brand mb-0 h1"><?= t('delegate_area') ?> (<?= htmlspecialchars($promo['name']) ?>)</span>
+        <img src="assets/img/campusdrivewhite.webp" alt="Logo" class="img-fluid" style="max-height: 50px;">
         <div>
             <a href="student.php" class="btn btn-outline-light btn-sm me-2"><?= t('home') ?></a>
             <a href="delegate.php" class="btn btn-light btn-sm me-2"><?= t('delegate_area') ?></a>

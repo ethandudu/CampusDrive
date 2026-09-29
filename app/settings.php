@@ -108,7 +108,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 <body class="bg-light">
 <nav class="navbar navbar-dark bg-secondary mb-4 shadow">
     <div class="container">
-        <span class="navbar-brand mb-0 h1">CampusDrive - <?= t('settings') ?></span>
+        <span class="navbar-brand mb-0 h1"><?= t('settings') ?></span>
+        <img src="assets/img/campusdrivewhite.webp" alt="Logo" class="img-fluid" style="max-height: 50px;">
         <div>
             <a href="student.php" class="btn btn-outline-light btn-sm me-2"><?= t('home') ?></a>
             <?php if ($user['role'] === 'delegate'): ?>
