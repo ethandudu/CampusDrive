@@ -103,6 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     <meta charset="UTF-8">
     <title><?= t('settings') ?> - CampusDrive</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
 </head>
 <body class="bg-light">
 <nav class="navbar navbar-dark bg-secondary mb-4 shadow">

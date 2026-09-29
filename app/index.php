@@ -11,6 +11,7 @@ require_once 'utils/i18n.php';
     <title>CampusDrive - Le partage étudiant, simplement</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/site.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">

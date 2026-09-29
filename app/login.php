@@ -56,6 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <title><?= t('login') ?> - CampusDrive</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
 </head>
 <body class="bg-light d-flex align-items-center vh-100">
 <div class="container">
@@ -63,7 +64,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="col-md-5">
             <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white text-center">
-                    <h4 class="mb-0">CampusDrive</h4>
+                    <img src="assets/img/campusdrivewhite.webp" alt="Logo" class="img-fluid" style="max-height: 150px;">
+                    <hr>
+                    <h5><?= t('login') ?></h5>
                 </div>
                 <div class="card-body p-4">
                     <?php if ($message): ?>

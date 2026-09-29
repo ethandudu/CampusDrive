@@ -8,6 +8,7 @@ require_once 'utils/session.php';
     <title>Conditions générales d’utilisation - CampusDrive</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/site.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
 </head>
 <body class="bg-light">
 <nav class="navbar bg-white border-bottom"><div class="container"><a class="navbar-brand fw-bold text-primary" href="index.php">CampusDrive</a><a href="index.php">Retour à l’accueil</a></div></nav>
