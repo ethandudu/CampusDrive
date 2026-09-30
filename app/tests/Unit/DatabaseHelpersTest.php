@@ -5,8 +5,6 @@ namespace Tests\Unit;
 use PHPUnit\Framework\TestCase;
 use CampusDrive\Infrastructure\Database\InputSanitizer;
 
-require_once __DIR__ . '/../../utils/db.php';
-
 /**
  * Unit tests for input helpers that do not require a database connection.
  */

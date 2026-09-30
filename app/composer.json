@@ -17,6 +17,11 @@
             "CampusDrive\\Infrastructure\\Database\\": "src/Infrastructure/Database/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
     "require-dev": {
         "phpunit/phpunit": "^11"
     },

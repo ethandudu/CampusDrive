@@ -8,8 +8,6 @@ use CampusDrive\Infrastructure\Database\FileRepository;
 use CampusDrive\Infrastructure\Database\PromotionRepository;
 use CampusDrive\Infrastructure\Database\UserRepository;
 
-require_once __DIR__ . '/../../utils/db.php';
-
 /**
  * These tests exercise the database repositories against a real MySQL/MariaDB
  * instance using the schema defined in init.sql. They are skipped when no
