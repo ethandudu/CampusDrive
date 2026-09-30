@@ -212,11 +212,15 @@ if (!$my_pending_files) {
         'error' => t('generic_error'),
     ]) ?>;
 
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[char]));
+
     function openFolder(folderId) {
         sessionStorage.setItem('student_current_folder', folderId === null || folderId === undefined ? 'null' : folderId);
         document.querySelector('#uploadFolderIdInput').value = folderId === null || folderId === undefined ? '' : folderId;
 
-        fetch(`student.php?folderId=${folderId}`)
+        fetch(`student.php?folderId=${encodeURIComponent(folderId)}`)
             .then(response => response.json())
             .then(data => {
                 const rows = [];
@@ -228,7 +232,7 @@ if (!$my_pending_files) {
                     rows.push(`
                         <tr>
                             <td>
-                                <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="openFolder('${previousFolderId}')">
+                                <button class="btn btn-sm btn-link p-0 text-decoration-none" data-folder-id="${escapeHtml(previousFolderId)}">
                                     📁.. / ${labels.back}
                                 </button>
                             </td>
@@ -240,11 +244,12 @@ if (!$my_pending_files) {
 
                 if (data.folders && data.folders.length) {
                     hasContent = true;
+                    // Folder names are stored already HTML-encoded (see FileRepository::createFolder).
                     data.folders.forEach(folder => {
                         rows.push(`
                             <tr>
                                 <td>
-                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" onclick="openFolder('${folder.id}')">
+                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" data-folder-id="${escapeHtml(folder.id)}">
                                         📁 ${folder.name}
                                     </button>
                                 </td>
@@ -260,9 +265,9 @@ if (!$my_pending_files) {
                     data.files.forEach(file => {
                         rows.push(`
                             <tr>
-                                <td>📄 ${file.original_name}</td>
+                                <td>📄 ${escapeHtml(file.original_name)}</td>
                                 <td>${file.created_at ? new Date(file.created_at).toLocaleString(locale) : ''}</td>
-                                <td><a href="view.php?id=${file.id}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a></td>
+                                <td><a href="view.php?id=${escapeHtml(encodeURIComponent(file.id))}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a></td>
                             </tr>
                         `);
                     });
@@ -279,6 +284,13 @@ if (!$my_pending_files) {
             .catch(error => console.error(labels.error, error));
     }
 
+    document.querySelector('#folderTable tbody').addEventListener('click', event => {
+        const button = event.target.closest('[data-folder-id]');
+        if (button) {
+            openFolder(button.dataset.folderId);
+        }
+    });
+
     document.querySelector('#uploadFileInput').addEventListener('change', function () {
         const nameInput = document.querySelector('#uploadFileNameInput');
         if (this.files.length && !nameInput.value) {
@@ -287,7 +299,7 @@ if (!$my_pending_files) {
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        const storageKey = 'student_current_folder_<?= htmlspecialchars($promo_id, ENT_QUOTES, 'UTF-8') ?>';
+        const storageKey = <?= json_encode('student_current_folder_' . $promo_id, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         const savedFolder = sessionStorage.getItem(storageKey);
         openFolder(savedFolder && savedFolder !== 'null' ? Number(savedFolder) : null);
     });

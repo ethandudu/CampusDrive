@@ -34,10 +34,15 @@ if ($promotionRepository->getPromotionStatus($_SESSION['promotion_id']) == 'pend
 $success = '';
 $error = '';
 
-if (isset($_GET['error'])) {
+// Only known message keys are translated: the translations may contain trusted HTML,
+// so arbitrary user input must never reach t().
+$allowedErrorKeys = ['invalid_email_domain', 'email_already_invited'];
+$allowedSuccessKeys = ['invitation_deleted'];
+
+if (isset($_GET['error']) && is_string($_GET['error']) && in_array($_GET['error'], $allowedErrorKeys, true)) {
     $error = t($_GET['error']);
 }
-if (isset($_GET['success'])) {
+if (isset($_GET['success']) && is_string($_GET['success']) && in_array($_GET['success'], $allowedSuccessKeys, true)) {
     $success = t($_GET['success']);
 }
 
@@ -348,8 +353,12 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
         'error' => t('generic_error'),
     ]) ?>;
 
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[char]));
+
     function openFolder(folderId) {
-        fetch(`delegate.php?folderId=${folderId}`)
+        fetch(`delegate.php?folderId=${encodeURIComponent(folderId)}`)
             .then(response => response.json())
             .then(data => {
                 const rows = [];
@@ -361,7 +370,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                     rows.push(`
                         <tr>
                             <td>
-                                <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="openFolder('${previousFolderId}')">
+                                <button class="btn btn-sm btn-link p-0 text-decoration-none" data-action="open-folder" data-id="${escapeHtml(previousFolderId)}">
                                     📁.. / ${labels.back}
                                 </button>
                             </td>
@@ -373,17 +382,18 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
 
                 if (data.folders && data.folders.length) {
                     hasContent = true;
+                    // Folder names are stored already HTML-encoded (see FileRepository::createFolder).
                     data.folders.forEach(folder => {
                         rows.push(`
                             <tr>
                                 <td>
-                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" onclick="openFolder('${folder.id}')">
+                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" data-action="open-folder" data-id="${escapeHtml(folder.id)}">
                                         📁 ${folder.name}
                                     </button>
                                 </td>
                                 <td>${folder.created_at ? new Date(folder.created_at).toLocaleString(locale) : ''}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteFolder('${folder.id}')">${labels.delete}</button>
+                                    <button class="btn btn-sm btn-outline-danger" data-action="delete-folder" data-id="${escapeHtml(folder.id)}">${labels.delete}</button>
                                 </td>
                             </tr>
                         `);
@@ -395,9 +405,9 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                     data.files.forEach(file => {
                         rows.push(`
                             <tr>
-                                <td>📄 ${file.original_name}</td>
+                                <td>📄 ${escapeHtml(file.original_name)}</td>
                                 <td>${file.created_at ? new Date(file.created_at).toLocaleString(locale) : ''}</td>
-                                <td><a href="view.php?id=${file.id}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a><button class="btn btn-sm btn-outline-danger" onclick="deleteFile('${file.id}')">${labels.delete}</button></td>
+                                <td><a href="view.php?id=${escapeHtml(encodeURIComponent(file.id))}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a><button class="btn btn-sm btn-outline-danger" data-action="delete-file" data-id="${escapeHtml(file.id)}">${labels.delete}</button></td>
                             </tr>
                         `);
                     });
@@ -426,6 +436,15 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
         document.querySelector('#deleteForm input[name="action"]').value = 'delete_file';
         new bootstrap.Modal(document.getElementById('deleteModal')).show();
     }
+
+    document.querySelector('#folderTable tbody').addEventListener('click', event => {
+        const button = event.target.closest('[data-action]');
+        if (!button) {
+            return;
+        }
+        const handlers = {'open-folder': openFolder, 'delete-folder': deleteFolder, 'delete-file': deleteFile};
+        handlers[button.dataset.action]?.(button.dataset.id);
+    });
 
     document.addEventListener('DOMContentLoaded', function () {
         openFolder(null);
