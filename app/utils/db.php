@@ -174,7 +174,7 @@ class Database
         return null;
     }
 
-    public static function updateUserPassword(int $userId, string $currentPassword, string $newPassword): bool
+    public static function updateUserPassword(string $userId, string $currentPassword, string $newPassword): bool
     {
         $currentPassword = self::sanitizeInput($currentPassword);
         $newPassword = self::sanitizeInput($newPassword);
@@ -184,6 +184,8 @@ class Database
         $user = $stmt->fetch();
 
         if (!$user || !password_verify($currentPassword, $user['password'])) {
+            echo 'user: ' . print_r($user, true);
+            echo 'current : ' . $currentPassword . ' | stored : ' . $user['password'];
             return false; // Current password is incorrect
         }
 

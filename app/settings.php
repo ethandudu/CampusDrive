@@ -65,11 +65,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'chang
     $new_password = $_POST['new_password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
 
+
+
     if ($new_password !== $confirm_password) {
         $error = t('password_mismatch');
     } else {
         // Update the user's password
-        if(Database::updateUserPassword((int) $user['id'], $current_password, $new_password)) {
+        if(Database::updateUserPassword((string) $_SESSION['user_id'], $current_password, $new_password)) {
             $success = t('password_change_success');
         } else {
             $error = t('password_change_error');
