@@ -2,6 +2,7 @@
 
 namespace CampusDrive\Infrastructure\Database;
 
+use CampusDrive\Infrastructure\Storage\UploadStorage;
 use PDO;
 use RuntimeException;
 
@@ -155,10 +156,7 @@ final class FileRepository extends DatabaseRepository
         $file = $fileStmt->fetch();
 
         if ($file && !empty($file['file_path'])) {
-            $fullPath = dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $file['file_path'];
-            if (is_file($fullPath)) {
-                unlink($fullPath);
-            }
+            (new UploadStorage())->delete($file['file_path']);
         }
 
         $stmt = $this->connection()->prepare("DELETE FROM files WHERE id = ?");

@@ -20,6 +20,9 @@ RUN echo "file_uploads = On\n" \
 
 RUN chown -R www-data:www-data /var/www/html
 
+# Uploaded files live outside the web root and are only served through view.php.
+RUN mkdir -p /var/www/uploads && chown www-data:www-data /var/www/uploads && chmod 750 /var/www/uploads
+
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 

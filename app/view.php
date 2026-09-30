@@ -1,5 +1,6 @@
 <?php
 use CampusDrive\Infrastructure\Database\FileRepository;
+use CampusDrive\Infrastructure\Storage\UploadStorage;
 
 require_once 'utils/db.php';
 
@@ -30,14 +31,15 @@ if ($file['status'] !== 'approved' && $_SESSION['user_id'] !== $file['user_id'] 
     die(t('file_pending_approval'));
 }
 
-$full_path = __DIR__ . '/uploads/' . $file['file_path'];
+$full_path = (new UploadStorage())->find($file['file_path']);
 
-if (!file_exists($full_path)) {
+if ($full_path === null) {
     die(t('file_missing'));
 }
 
 // Envoi des en-têtes HTTP pour affichage direct dans le navigateur
 header('Content-Type: ' . $file['file_type']);
+header('X-Content-Type-Options: nosniff');
 header('Content-Disposition: inline; filename="' . basename($file['original_name']) . '"');
 header('Content-Length: ' . filesize($full_path));
 

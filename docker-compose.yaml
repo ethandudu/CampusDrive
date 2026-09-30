@@ -20,6 +20,7 @@ services:
       - "8080:80"
     volumes:
       - ./app:/var/www/html
+      - uploads_data:/var/www/uploads
     depends_on:
       - mariadb
     environment:
@@ -30,3 +31,4 @@ services:
 
 volumes:
   mariadb_data:
+  uploads_data:

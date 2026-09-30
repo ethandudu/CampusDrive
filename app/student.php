@@ -1,6 +1,7 @@
 <?php
 use CampusDrive\Infrastructure\Database\FileRepository;
 use CampusDrive\Infrastructure\Database\PromotionRepository;
+use CampusDrive\Infrastructure\Storage\UploadStorage;
 
 require_once 'utils/db.php';
 
@@ -71,16 +72,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
 
         if (array_key_exists($mime_type, $allowed_types)) {
             $ext = $allowed_types[$mime_type];
-            $stored_name = uniqid('file_', true) . '.' . $ext;
-            $upload_dir = __DIR__ . '/uploads/';
+            $storage = new UploadStorage();
+            $stored_name = $storage->generateName($ext);
 
-            if (!is_dir($upload_dir)) {
-                mkdir($upload_dir, 0777, true);
-            }
-
-            $destination = $upload_dir . $stored_name;
-
-            if (move_uploaded_file($file['tmp_name'], $destination)) {
+            if ($storage->prepareDirectory() && move_uploaded_file($file['tmp_name'], $storage->pathFor($stored_name))) {
                 $fileRepository->createFileRecord($user_id, $promo_id, $display_name, $stored_name, $mime_type, $folder_id);
                 $message = t('file_uploaded');
             } else {

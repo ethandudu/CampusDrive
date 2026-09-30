@@ -16,3 +16,4 @@ define('MAIL_FROM_NAME', 'CampusDrive');
 // Utils
 define('UNIVERSITY_EMAIL_DOMAINS', []);
 define('admin_email', '');
+// OPTIONAL: define('UPLOAD_DIR', '');
