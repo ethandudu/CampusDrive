@@ -188,7 +188,7 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
                         <th>Email</th>
                         <th><?= t('status') ?></th>
                         <th><?= t('date') ?></th>
-                        <th><?= t('actions') ?></th>
+                        <th><?= t('action') ?></th>
                     </tr>
                     </thead>
                     <tbody>
