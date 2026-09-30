@@ -184,6 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <input type="text" class="form-control" name="captcha" required placeholder="<?= t('captcha_placeholder') ?>">
                         </div>
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                        <input type="hidden" name="action" value="register">
                         <button type="submit" class="btn btn-primary w-100" disabled><?= t('sign_up') ?></button>
                     </form>
                     <div class="mt-3 text-center">
