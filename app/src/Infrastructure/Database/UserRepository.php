@@ -108,6 +108,15 @@ final class UserRepository extends DatabaseRepository
         return $this->storePasswordHash($userId, password_hash($newPassword, PASSWORD_DEFAULT));
     }
 
+    /**
+     * Re-hashes the current password with a fresh salt. The stored hash changes, which ends every
+     * session opened before (see SessionPolicy::fingerprint) without the user changing their password.
+     */
+    public function rotatePasswordHash(string $userId, string $password): bool
+    {
+        return $this->updateUserPassword($userId, $password, $password);
+    }
+
     public function getTotalUsers(): int
     {
         $stmt = $this->connection()->query("SELECT COUNT(*) FROM users");

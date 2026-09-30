@@ -102,6 +102,10 @@ function translations(): array
             'confirm_account_deletion' => 'Confirmer la suppression du compte',
             'delete_account' => 'Supprimer le compte',
             'account_deletion_error' => 'Erreur lors de la suppression du compte.',
+            'active_sessions' => 'Sessions actives',
+            'revoke_sessions_help' => 'Déconnecte tous vos autres appareils et navigateurs, sauf celui-ci. Utile si vous avez oublié de vous déconnecter sur un ordinateur partagé ou si vous pensez que quelqu’un d’autre a accédé à votre compte.',
+            'revoke_sessions' => 'Déconnecter mes autres sessions',
+            'sessions_revoked' => 'Toutes vos autres sessions ont été déconnectées.',
             'invitation_deleted' => 'Invitation supprimée avec succès.',
         ],
         'en' => [
@@ -190,6 +194,10 @@ function translations(): array
             'confirm_account_deletion' => 'Confirm account deletion',
             'delete_account' => 'Delete account',
             'account_deletion_error' => 'An error occurred while deleting the account.',
+            'active_sessions' => 'Active sessions',
+            'revoke_sessions_help' => 'Signs you out of all your other devices and browsers, except this one. Useful if you forgot to sign out on a shared computer or think someone else accessed your account.',
+            'revoke_sessions' => 'Sign out my other sessions',
+            'sessions_revoked' => 'All your other sessions have been signed out.',
             'invitation_deleted' => 'Invitation deleted successfully.',
         ],
     ];

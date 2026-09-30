@@ -96,6 +96,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'chang
     }
 }
 
+// Sign out every other session of this account
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'revoke_other_sessions') {
+    $current_password = $_POST['current_password'] ?? '';
+
+    if (!is_string($current_password) || !$userRepository->rotatePasswordHash((string) $_SESSION['user_id'], $current_password)) {
+        recordFailedReauthentication();
+        $error = t('current_password_incorrect');
+    } else {
+        // Other sessions are bound to the previous hash; only this one is reopened with the new hash.
+        startAuthenticatedSession($userRepository->getSessionState((string) $_SESSION['user_id']));
+        $success = t('sessions_revoked');
+    }
+}
+
 // Handle promotion request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'request_promo') {
     if ($user['promotion_id']) {
@@ -261,6 +275,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             <input type="password" class="form-control" id="confirm_password" name="confirm_password" required disabled>
                         </div>
                         <button type="submit" class="btn btn-primary" id="change_password_btn" disabled><?= t('change_password') ?></button>
+                    </form>
+                </div>
+            </div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white fw-bold"><?= t('active_sessions') ?></div>
+                <div class="card-body">
+                    <p><?= t('revoke_sessions_help') ?></p>
+                    <form method="POST" action="">
+                        <input type="hidden" name="action" value="revoke_other_sessions">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                        <div class="mb-3">
+                            <label class="form-label"><?= t('current_password') ?></label>
+                            <input type="password" class="form-control" name="current_password" autocomplete="current-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-outline-danger"><?= t('revoke_sessions') ?></button>
                     </form>
                 </div>
             </div>

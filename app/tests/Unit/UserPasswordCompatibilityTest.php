@@ -134,6 +134,31 @@ final class UserPasswordCompatibilityTest extends TestCase
         $this->assertFalse($this->users->verifyPassword('unknown', self::SPECIAL_PASSWORD));
     }
 
+    public function testRotatingThePasswordHashEndsOtherSessionsButKeepsThePassword(): void
+    {
+        $this->insertUser('rotator', password_hash(self::SPECIAL_PASSWORD, PASSWORD_DEFAULT));
+        $oldHash = $this->storedHash('rotator');
+        $otherDevice = ['auth_fingerprint' => SessionPolicy::fingerprint($oldHash)];
+
+        $this->assertTrue($this->users->rotatePasswordHash('rotator', self::SPECIAL_PASSWORD));
+
+        $newHash = $this->storedHash('rotator');
+        $this->assertNotSame($oldHash, $newHash);
+        $this->assertTrue(password_verify(self::SPECIAL_PASSWORD, $newHash));
+        $this->assertFalse(SessionPolicy::matchesUser($otherDevice, $this->users->getSessionState('rotator')));
+        $currentDevice = ['auth_fingerprint' => SessionPolicy::fingerprint($newHash)];
+        $this->assertTrue(SessionPolicy::matchesUser($currentDevice, $this->users->getSessionState('rotator')));
+    }
+
+    public function testRotatingWithAWrongPasswordChangesNothing(): void
+    {
+        $hash = password_hash(self::SPECIAL_PASSWORD, PASSWORD_DEFAULT);
+        $this->insertUser('rotator', $hash);
+
+        $this->assertFalse($this->users->rotatePasswordHash('rotator', 'Wrong&Password1!'));
+        $this->assertSame($hash, $this->storedHash('rotator'));
+    }
+
     public function testWrongCurrentPasswordDoesNotChangeAnything(): void
     {
         $hash = password_hash('OldSecret123!', PASSWORD_DEFAULT);

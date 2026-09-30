@@ -93,7 +93,8 @@ final class SessionPolicyTest extends TestCase
         $settings = (string) file_get_contents(dirname(__DIR__, 2) . '/settings.php');
 
         $this->assertStringContainsString('verifyPassword((string) $user[\'id\'], $current_password)', $settings);
-        $this->assertSame(2, substr_count($settings, 'recordFailedReauthentication();'));
+        $this->assertSame(3, substr_count($settings, 'recordFailedReauthentication();'));
+        $this->assertStringContainsString('rotatePasswordHash((string) $_SESSION[\'user_id\'], $current_password)', $settings);
         $this->assertStringContainsString('name="current_password" autocomplete="current-password"', $settings);
     }
 
