@@ -1,5 +1,15 @@
 <?php
+use CampusDrive\Infrastructure\Database\FileRepository;
+use CampusDrive\Infrastructure\Database\InvitationRepository;
+use CampusDrive\Infrastructure\Database\PromotionRepository;
+use CampusDrive\Infrastructure\Database\UserRepository;
+
 require_once 'utils/db.php';
+
+$userRepository = new UserRepository();
+$promotionRepository = new PromotionRepository();
+$fileRepository = new FileRepository();
+$invitationRepository = new InvitationRepository();
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 require_once 'utils/mail.php';
@@ -16,7 +26,7 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-if (Database::getPromotionStatus($_SESSION['promotion_id']) == 'pending') {
+if ($promotionRepository->getPromotionStatus($_SESSION['promotion_id']) == 'pending') {
     header('Location: settings.php?error=promotion_inactive');
     exit;
 }
@@ -35,7 +45,7 @@ if (isset($_GET['folderId'])) {
     $folderId = ($_GET['folderId']) && $_GET['folderId'] !== 'null' && $_GET['folderId'] !== ''
         ? $_GET['folderId']
         : null;
-    $folderDetails = Database::getPromotionFolderFiles($folderId, $_SESSION['promotion_id']);
+    $folderDetails = $fileRepository->getPromotionFolderFiles($folderId, $_SESSION['promotion_id']);
 
     header('Content-Type: application/json');
     echo json_encode($folderDetails);
@@ -48,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         die(t('security_error'));
     }
     $invitation_id = htmlspecialchars($_POST['invitation_id']);
-    Database::deleteInvitation($invitation_id);
+    $invitationRepository->deleteInvitation($invitation_id);
     header('Location: delegate.php?success=invitation_deleted');
     exit;
 }
@@ -66,15 +76,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
         exit;
     }
 
-    if (Database::checkIfEmailIsAlreadyInvited($_POST['invite_email'], $_SESSION['promotion_id'])) {
+    if ($invitationRepository->checkIfEmailIsAlreadyInvited($_POST['invite_email'], $_SESSION['promotion_id'])) {
         header('Location: delegate.php?error=email_already_invited');
         exit;
     }
     $token = bin2hex(random_bytes(32));
 
-    Database::createInvitation($_POST['invite_email'], $_SESSION['promotion_id'], $token);
-
-    $promotionForInvite = Database::getPromotionDetails($_SESSION['promotion_id']);
+    $invitationRepository->createInvitation($_POST['invite_email'], $_SESSION['promotion_id'], $token);
+    $promotionForInvite = $promotionRepository->getPromotionDetails($_SESSION['promotion_id']);
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']);
     $registerLink = $baseUrl . '/register.php?token=' . urlencode($token);
@@ -89,20 +98,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         ? $_POST['parent_id']
         : null;
     if (!empty($folder_name)) {
-        Database::createFolder($_SESSION['promotion_id'], $parent_id, $folder_name);
+        $fileRepository->createFolder($_SESSION['promotion_id'], $parent_id, $folder_name);
     }
 }
 
 // Delete folder
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_folder') {
     $folder_id = $_POST['element_id'];
-    Database::deletePromotionFolder($folder_id);
+    $fileRepository->deletePromotionFolder($folder_id);
 }
 
 // Delete file
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_file') {
     $file_id = (string) $_POST['element_id'];
-    Database::rejectPromotionFile($file_id);
+    $fileRepository->rejectPromotionFile($file_id);
 }
 
 // Validation or rejection of files
@@ -111,17 +120,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
         die(t('security_error'));
     }
     $file_id = (string) $_POST['file_id'];
-    $file = Database::getFile($file_id);
-    $uploader = $file ? Database::getUserDetails((string) $file['user_id']) : null;
+    $file = $fileRepository->getFile($file_id);
+    $uploader = $file ? $userRepository->getUserDetails((string) $file['user_id']) : null;
 
     if ($_POST['file_action'] === 'approve') {
-        Database::approvePromotionFile($file_id);
+        $fileRepository->approvePromotionFile($file_id);
         if ($file && $uploader && !empty($uploader['email'])) {
             $fileApprovedEmail = fileApprovedEmailTemplate($file['original_name']);
             (new Mailer())->sendMail($uploader['email'], $fileApprovedEmail['subject'], $fileApprovedEmail['body']);
         }
     } elseif ($_POST['file_action'] === 'reject') {
-        Database::rejectPromotionFile($file_id);
+        $fileRepository->rejectPromotionFile($file_id);
         if ($file && $uploader && !empty($uploader['email'])) {
             $fileRejectedEmail = fileRejectedEmailTemplate($file['original_name']);
             (new Mailer())->sendMail($uploader['email'], $fileRejectedEmail['subject'], $fileRejectedEmail['body']);
@@ -129,9 +138,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
     }
 }
 
-$pending_files = Database::getPromotionPendingFiles($_SESSION['promotion_id']);
-$promo = Database::getPromotionDetails($_SESSION['promotion_id']);
-$invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
+$pending_files = $fileRepository->getPromotionPendingFiles($_SESSION['promotion_id']);
+$promo = $promotionRepository->getPromotionDetails($_SESSION['promotion_id']);
+$invitations = $invitationRepository->getPromotionInvitations($_SESSION['promotion_id']);
 
 ?>
 <!DOCTYPE html>

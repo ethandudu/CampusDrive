@@ -1,5 +1,11 @@
 <?php
+use CampusDrive\Infrastructure\Database\FileRepository;
+use CampusDrive\Infrastructure\Database\PromotionRepository;
+
 require_once 'utils/db.php';
+
+$promotionRepository = new PromotionRepository();
+$fileRepository = new FileRepository();
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 
@@ -17,7 +23,7 @@ $user_id = $_SESSION['user_id'];
 $promo_id = $_SESSION['promotion_id'];
 $message = ''; $error = '';
 
-if (Database::getPromotionStatus($promo_id) == 'pending') {
+if ($promotionRepository->getPromotionStatus($promo_id) == 'pending') {
     header('Location: settings.php?error=promotion_inactive');
     exit;
 }
@@ -26,7 +32,7 @@ if (isset($_GET['folderId'])) {
     $folder_id = ($_GET['folderId']) && $_GET['folderId'] !== 'null' && $_GET['folderId'] !== ''
         ? $_GET['folderId']
         : null;
-    $folder_details = Database::getPromotionFolderFiles($folder_id, $promo_id);
+    $folder_details = $fileRepository->getPromotionFolderFiles($folder_id, $promo_id);
 
     header('Content-Type: application/json');
     echo json_encode($folder_details);
@@ -71,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
             $destination = $upload_dir . $stored_name;
 
             if (move_uploaded_file($file['tmp_name'], $destination)) {
-                Database::createFileRecord($user_id, $promo_id, $display_name, $stored_name, $mime_type, $folder_id);
+                $fileRepository->createFileRecord($user_id, $promo_id, $display_name, $stored_name, $mime_type, $folder_id);
                 $message = t('file_uploaded');
             } else {
                 $error = t('file_save_error');
@@ -84,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
     }
 }
 
-$my_pending_files = Database::getUserPendingFiles($user_id);
+$my_pending_files = $fileRepository->getUserPendingFiles($user_id);
 if (!$my_pending_files) {
     $count_pending = 0;
     $my_pending_files = [['original_name' => t('no_pending_uploads')]];

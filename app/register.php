@@ -3,7 +3,13 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+use CampusDrive\Infrastructure\Database\InvitationRepository;
+use CampusDrive\Infrastructure\Database\UserRepository;
+
 require_once 'utils/db.php';
+
+$userRepository = new UserRepository();
+$invitationRepository = new InvitationRepository();
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 require_once 'dCaptcha/captcha.php';
@@ -31,7 +37,7 @@ $promo_id = null;
 $role = 'delegate';
 
 if ($token) {
-    $invitation = Database::getInvitationByToken($token);
+    $invitation = $invitationRepository->getInvitationByToken($token);
 
     if ($invitation) {
         $invited_email = $invitation['email'];
@@ -91,8 +97,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($token && is_array($invitation)) {
                 $role = $invitation['role'] ?? 'student';
             }
-            if (Database::createUser($email, $password, $promo_id, $role)) {
-                Database::markInvitationAsUsed($token);
+            if ($userRepository->createUser($email, $password, $promo_id, $role)) {
+                $invitationRepository->markInvitationAsUsed($token);
                 $welcomeEmail = welcomeEmailTemplate($email);
                 (new Mailer)->sendMail($email, $welcomeEmail['subject'], $welcomeEmail['body']);
                 header("Location: login.php?registered=1");

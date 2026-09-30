@@ -1,5 +1,9 @@
 <?php
+use CampusDrive\Infrastructure\Database\UserRepository;
+
 require_once 'utils/db.php';
+
+$userRepository = new UserRepository();
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 $compose = json_decode(file_get_contents(__DIR__ . '/composer.json'), true);
@@ -29,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $user = Database::loginUser($_POST['email'], $_POST['password']);
+    $user = $userRepository->loginUser($_POST['email'], $_POST['password']);
 
     if ($user !== null) {
         $_SESSION['user_id'] = $user['id'];

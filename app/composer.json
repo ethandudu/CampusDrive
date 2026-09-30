@@ -12,6 +12,11 @@
     "config": {
         "optimize-autoloader": true
     },
+    "autoload": {
+        "psr-4": {
+            "CampusDrive\\Infrastructure\\Database\\": "src/Infrastructure/Database/"
+        }
+    },
     "require-dev": {
         "phpunit/phpunit": "^11"
     },

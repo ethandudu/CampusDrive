@@ -1,5 +1,9 @@
 <?php
+use CampusDrive\Infrastructure\Database\FileRepository;
+
 require_once 'utils/db.php';
+
+$fileRepository = new FileRepository();
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 
@@ -9,7 +13,7 @@ if (!isset($_SESSION['user_id'])) {
 
 $file_id = (string) ($_GET['id'] ?? 0);
 
-$file = Database::getFile($file_id);
+$file = $fileRepository->getFile($file_id);
 
 if (!$file) {
     die(t('file_not_found'));

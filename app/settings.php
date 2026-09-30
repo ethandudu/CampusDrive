@@ -1,5 +1,11 @@
 <?php
+use CampusDrive\Infrastructure\Database\PromotionRepository;
+use CampusDrive\Infrastructure\Database\UserRepository;
+
 require_once 'utils/db.php';
+
+$userRepository = new UserRepository();
+$promotionRepository = new PromotionRepository();
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 
@@ -23,7 +29,7 @@ if (isset($_GET['error'])) {
     }
 }
 
-$user = Database::getUserDetails($_SESSION['user_id']);
+$user = $userRepository->getUserDetails($_SESSION['user_id']);
 
 // Handle language update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_language') {
@@ -35,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
     if (!array_key_exists($language, SUPPORTED_LOCALES)) {
         $error = t('invalid_language');
     } else {
-        Database::updateUserLanguage((int) $user['id'], $language);
+        $userRepository->updateUserLanguage((int) $user['id'], $language);
         $_SESSION['locale'] = $language;
         header('Location: settings.php?success=language_updated');
         exit;
@@ -47,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         die(t('security_error'));
     }
-    if (Database::deleteUser((string) $user['id'])) {
+    if ($userRepository->deleteUser((string) $user['id'])) {
         session_destroy();
         header('Location: index.php');
         exit;
@@ -71,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'chang
         $error = t('password_mismatch');
     } else {
         // Update the user's password
-        if(Database::updateUserPassword((string) $_SESSION['user_id'], $current_password, $new_password)) {
+        if($userRepository->updateUserPassword((string) $_SESSION['user_id'], $current_password, $new_password)) {
             $success = t('password_change_success');
         } else {
             $error = t('password_change_error');
@@ -86,8 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     } else {
         $promo_name = trim($_POST['promo_name']);
         try {
-            $new_promo_id = Database::createPromotion($promo_name);
-            Database::attachUserToPromotion($user['id'], $new_promo_id);
+            $new_promo_id = $promotionRepository->createPromotion($promo_name);
+            $promotionRepository->attachUserToPromotion($user['id'], $new_promo_id);
 
             $_SESSION['promotion_id'] = $new_promo_id;
             $success = t('promotion_request_success');

@@ -1,7 +1,15 @@
 <?php
+use CampusDrive\Infrastructure\Database\FileRepository;
+use CampusDrive\Infrastructure\Database\PromotionRepository;
+use CampusDrive\Infrastructure\Database\UserRepository;
+
 require_once 'utils/db.php';
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
+
+$userRepository = new UserRepository();
+$promotionRepository = new PromotionRepository();
+$fileRepository = new FileRepository();
 require_once 'utils/mail.php';
 require_once 'utils/emailTemplates/promotion_activated.php';
 
@@ -21,12 +29,12 @@ if (isset($_POST['approve_promo_id'])) {
         die(t('security_error'));
     }
     $promo_id = $_POST['approve_promo_id'];
-    $promo_to_activate = Database::getPromotionDetails($promo_id);
+    $promo_to_activate = $promotionRepository->getPromotionDetails($promo_id);
 
-    Database::updatePromotionStatus($promo_id, 'active');
+    $promotionRepository->updatePromotionStatus($promo_id, 'active');
 
     if ($promo_to_activate && !empty($promo_to_activate['created_by'])) {
-        $requester = Database::getUserDetails((string) $promo_to_activate['created_by']);
+        $requester = $userRepository->getUserDetails((string) $promo_to_activate['created_by']);
         if ($requester && !empty($requester['email'])) {
             $activationEmail = promotionActivatedEmailTemplate($promo_to_activate['name']);
             (new Mailer())->sendMail($requester['email'], $activationEmail['subject'], $activationEmail['body']);
@@ -36,7 +44,7 @@ if (isset($_POST['approve_promo_id'])) {
     $success = t('promotion_activated');
 }
 
-$promotions = Database::getPendingPromotions();
+$promotions = $promotionRepository->getPendingPromotions();
 ?>
 <!DOCTYPE html>
 <html lang="<?= locale() ?>">
@@ -73,7 +81,7 @@ $promotions = Database::getPendingPromotions();
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title"><?= t('total_users') ?></h5>
-                    <p class="card-text fs-4"><?= Database::getTotalUsers() ?></p>
+                    <p class="card-text fs-4"><?= $userRepository->getTotalUsers() ?></p>
                 </div>
             </div>
         </div>
@@ -81,7 +89,7 @@ $promotions = Database::getPendingPromotions();
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title"><?= t('total_promotions') ?></h5>
-                    <p class="card-text fs-4"><?= Database::getTotalPromotions() ?></p>
+                    <p class="card-text fs-4"><?= $promotionRepository->getTotalPromotions() ?></p>
                 </div>
             </div>
         </div>
@@ -89,7 +97,7 @@ $promotions = Database::getPendingPromotions();
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title"><?= t('total_files') ?></h5>
-                    <p class="card-text fs-4"><?= Database::getTotalFiles() ?></p>
+                    <p class="card-text fs-4"><?= $fileRepository->getTotalFiles() ?></p>
                 </div>
             </div>
         </div>
