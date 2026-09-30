@@ -69,7 +69,19 @@ final class UserRepository extends DatabaseRepository
         $stmt->execute([InputSanitizer::sanitize($email)]);
         $user = $stmt->fetch();
 
-        if ($user && password_verify(InputSanitizer::sanitize($password), $user['password'])) {
+        if (!$user) {
+            return null;
+        }
+
+        if (password_verify($password, $user['password'])) {
+            return $user;
+        }
+
+        if ($this->matchesLegacyEncodedPassword($password, $user['password'])) {
+            // Move the account to a hash of the real password so the legacy fallback is only needed once.
+            $user['password'] = password_hash($password, PASSWORD_DEFAULT);
+            $this->storePasswordHash((string) $user['id'], $user['password']);
+
             return $user;
         }
 
@@ -78,25 +90,42 @@ final class UserRepository extends DatabaseRepository
 
     public function updateUserPassword(string $userId, string $currentPassword, string $newPassword): bool
     {
-        $currentPassword = InputSanitizer::sanitize($currentPassword);
-        $newPassword = InputSanitizer::sanitize($newPassword);
         $stmt = $this->connection()->prepare("SELECT password FROM users WHERE id = ?");
         $stmt->execute([$userId]);
         $user = $stmt->fetch();
 
-        if (!$user || !password_verify($currentPassword, $user['password'])) {
+        if (
+            !$user
+            || !(password_verify($currentPassword, $user['password'])
+                || $this->matchesLegacyEncodedPassword($currentPassword, $user['password']))
+        ) {
             return false; // Current password is incorrect
         }
 
-        $hashedNewPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-        $updateStmt = $this->connection()->prepare("UPDATE users SET password = ? WHERE id = ?");
-        return $updateStmt->execute([$hashedNewPassword, $userId]);
+        return $this->storePasswordHash($userId, password_hash($newPassword, PASSWORD_DEFAULT));
     }
 
     public function getTotalUsers(): int
     {
         $stmt = $this->connection()->query("SELECT COUNT(*) FROM users");
         return (int) $stmt->fetchColumn();
+    }
+
+    private function storePasswordHash(string $userId, string $hash): bool
+    {
+        $stmt = $this->connection()->prepare("UPDATE users SET password = ? WHERE id = ?");
+        return $stmt->execute([$hash, $userId]);
+    }
+
+    /**
+     * Login and password change used to hash the HTML-encoded (and trimmed) password, while
+     * registration hashed the raw one. Hashes created by the former still have to be accepted.
+     */
+    private function matchesLegacyEncodedPassword(string $password, string $hash): bool
+    {
+        $encoded = InputSanitizer::sanitize($password);
+
+        return $encoded !== null && $encoded !== $password && password_verify($encoded, $hash);
     }
 
     private function isEmailRegistered(string $email): bool
