@@ -61,7 +61,10 @@ $promotions = $promotionRepository->getPendingPromotions();
         <img src="assets/img/campusdrivewhite.webp" alt="Logo" class="img-fluid" style="max-height: 50px;">
         <div>
             <a href="settings.php" class="btn btn-outline-light btn-sm me-2"><?= t('settings') ?></a>
-            <a href="logout.php" class="btn btn-outline-light btn-sm"><?= t('logout') ?></a>
+            <form method="POST" action="logout.php" class="d-inline">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <button type="submit" class="btn btn-outline-light btn-sm"><?= t('logout') ?></button>
+            </form>
         </div>
     </div>
 </nav>

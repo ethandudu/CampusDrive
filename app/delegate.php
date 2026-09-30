@@ -57,11 +57,15 @@ if (isset($_GET['folderId'])) {
     exit;
 }
 
-// Handle invitation deletion
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['invitation_id'])) {
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+// Every state-changing request must carry a valid CSRF token.
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !is_string($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         die(t('security_error'));
     }
+}
+
+// Handle invitation deletion
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['invitation_id'])) {
     $invitation_id = htmlspecialchars($_POST['invitation_id']);
     $invitationRepository->deleteInvitation($invitation_id);
     header('Location: delegate.php?success=invitation_deleted');
@@ -70,10 +74,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Handle invitation generation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        die(t('security_error'));
-    }
-
     //check if the email is in the allowed domains
     $email_domain = substr(strrchr($_POST['invite_email'], "@"), 1);
     if (!in_array($email_domain, UNIVERSITY_EMAIL_DOMAINS)) {
@@ -121,9 +121,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Validation or rejection of files
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        die(t('security_error'));
-    }
     $file_id = (string) $_POST['file_id'];
     $file = $fileRepository->getFile($file_id);
     $uploader = $file ? $userRepository->getUserDetails((string) $file['user_id']) : null;
@@ -165,7 +162,10 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
             <a href="student.php" class="btn btn-outline-light btn-sm me-2"><?= t('home') ?></a>
             <a href="delegate.php" class="btn btn-light btn-sm me-2"><?= t('delegate_area') ?></a>
             <a href="settings.php" class="btn btn-outline-light btn-sm me-2"><?= t('settings') ?></a>
-            <a href="logout.php" class="btn btn-outline-danger btn-sm"><?= t('logout') ?></a>
+            <form method="POST" action="logout.php" class="d-inline">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <button type="submit" class="btn btn-outline-danger btn-sm"><?= t('logout') ?></button>
+            </form>
         </div>
     </div>
 </nav>
