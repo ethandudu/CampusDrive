@@ -372,6 +372,13 @@ class Database
         return $stmt->execute([self::sanitizeInput($email), $promotion_id, self::sanitizeInput($token)]);
     }
 
+    public static function deleteInvitation(string $invitation_id): bool
+    {
+        $pdo = self::getConnection();
+        $stmt = $pdo->prepare("DELETE FROM invitations WHERE id = ?");
+        return $stmt->execute([self::sanitizeInput($invitation_id)]);
+    }
+
     public static function getPromotionInvitations(string $promotion_id): array
     {
         $pdo = self::getConnection();

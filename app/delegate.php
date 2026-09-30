@@ -42,6 +42,17 @@ if (isset($_GET['folderId'])) {
     exit;
 }
 
+// Handle invitation deletion
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['invitation_id'])) {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die(t('security_error'));
+    }
+    $invitation_id = htmlspecialchars($_POST['invitation_id']);
+    Database::deleteInvitation($invitation_id);
+    header('Location: delegate.php?success=invitation_deleted');
+    exit;
+}
+
 // Handle invitation generation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
@@ -177,6 +188,7 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
                         <th>Email</th>
                         <th><?= t('status') ?></th>
                         <th><?= t('date') ?></th>
+                        <th><?= t('actions') ?></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -191,10 +203,17 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
                                 <?php endif; ?>
                             </td>
                             <td><?= date('d/m/Y H:i', strtotime($inv['created_at'])) ?></td>
+                            <td>
+                                <form method="POST" class="d-inline">
+                                    <input type="hidden" name="invitation_id" value="<?= $inv['id'] ?>">
+                                    <button type="submit" name="action" value="delete" class="btn btn-sm btn-danger" onclick="return confirm('<?= t('delete_confirmation') ?>');"><?= t('delete') ?></button>
+                                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                </form>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if(empty($invitations)): ?>
-                        <tr><td colspan="3" class="text-center text-muted"><?= t('no_invitations') ?></td></tr>
+                        <tr><td colspan="4" class="text-center text-muted"><?= t('no_invitations') ?></td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>

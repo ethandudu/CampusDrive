@@ -100,6 +100,7 @@ function translations(): array
             'confirm_account_deletion' => 'Confirmer la suppression du compte',
             'delete_account' => 'Supprimer le compte',
             'account_deletion_error' => 'Erreur lors de la suppression du compte.',
+            'invitation_deleted' => 'Invitation supprimée avec succès.',
         ],
         'en' => [
             'login' => 'Sign in', 'email' => 'Email address', 'password' => 'Password',
@@ -185,6 +186,7 @@ function translations(): array
             'confirm_account_deletion' => 'Confirm account deletion',
             'delete_account' => 'Delete account',
             'account_deletion_error' => 'An error occurred while deleting the account.',
+            'invitation_deleted' => 'Invitation deleted successfully.',
         ],
     ];
 
