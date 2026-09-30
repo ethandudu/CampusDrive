@@ -41,6 +41,18 @@ final class UserRepository extends DatabaseRepository
         return $stmt->fetch() ?: null;
     }
 
+    /**
+     * Minimal, always-fresh view of a user used to revalidate an existing session.
+     *
+     * @return array{id: string, role: string, promotion_id: ?string, password: string}|null
+     */
+    public function getSessionState(string $user_id): ?array
+    {
+        $stmt = $this->connection()->prepare("SELECT id, role, promotion_id, password FROM users WHERE id = ?");
+        $stmt->execute([$user_id]);
+        return $stmt->fetch() ?: null;
+    }
+
     public function updateUserLanguage(int $userId, string $language): bool
     {
         if (!in_array($language, ['fr', 'en'], true)) {
@@ -73,8 +85,6 @@ final class UserRepository extends DatabaseRepository
         $user = $stmt->fetch();
 
         if (!$user || !password_verify($currentPassword, $user['password'])) {
-            echo 'user: ' . print_r($user, true);
-            echo 'current : ' . $currentPassword . ' | stored : ' . $user['password'];
             return false; // Current password is incorrect
         }
 

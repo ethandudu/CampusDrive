@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die(t('security_error'));
     }
 
-    session_destroy();
+    destroySession();
 }
 
 header("Location: login.php");

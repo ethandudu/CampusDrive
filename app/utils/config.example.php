@@ -17,3 +17,7 @@ define('MAIL_FROM_NAME', 'CampusDrive');
 define('UNIVERSITY_EMAIL_DOMAINS', []);
 define('admin_email', '');
 // OPTIONAL: define('UPLOAD_DIR', '');
+
+// OPTIONAL: force the Secure flag on the session cookie. By default it is enabled when the request
+// is served over HTTPS (or behind a proxy sending X-Forwarded-Proto: https). Enable it in production.
+// define('SESSION_COOKIE_SECURE', true);

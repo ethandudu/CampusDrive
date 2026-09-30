@@ -7,6 +7,7 @@ use CampusDrive\Infrastructure\Database\DatabaseConnection;
 use CampusDrive\Infrastructure\Database\FileRepository;
 use CampusDrive\Infrastructure\Database\PromotionRepository;
 use CampusDrive\Infrastructure\Database\UserRepository;
+use CampusDrive\Infrastructure\Session\SessionPolicy;
 
 /**
  * These tests exercise the database repositories against a real MySQL/MariaDB
@@ -60,6 +61,44 @@ final class DatabaseIntegrationTest extends TestCase
         $this->users->createUser($email, $password, null, 'student');
 
         $this->assertNull($this->users->loginUser($email, 'WrongPassword!'));
+    }
+
+    public function testPasswordChangeInvalidatesTheSessionFingerprint(): void
+    {
+        $email = 'session_' . bin2hex(random_bytes(4)) . '@example.com';
+        $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'student');
+        $user = $this->users->loginUser($email, 'Secret123!');
+        $session = ['auth_fingerprint' => SessionPolicy::fingerprint($user['password'])];
+
+        $this->assertTrue(SessionPolicy::matchesUser($session, $this->users->getSessionState($user['id'])));
+
+        $this->assertTrue($this->users->updateUserPassword($user['id'], 'Secret123!', 'NewSecret456!'));
+
+        $this->assertFalse(SessionPolicy::matchesUser($session, $this->users->getSessionState($user['id'])));
+    }
+
+    public function testFailedPasswordChangeOutputsNothingAndKeepsTheSession(): void
+    {
+        $email = 'session_' . bin2hex(random_bytes(4)) . '@example.com';
+        $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'student');
+        $user = $this->users->loginUser($email, 'Secret123!');
+        $session = ['auth_fingerprint' => SessionPolicy::fingerprint($user['password'])];
+
+        $this->expectOutputString('');
+        $this->assertFalse($this->users->updateUserPassword($user['id'], 'WrongPassword!', 'NewSecret456!'));
+
+        $this->assertTrue(SessionPolicy::matchesUser($session, $this->users->getSessionState($user['id'])));
+    }
+
+    public function testSessionStateIsMissingForADeletedUser(): void
+    {
+        $email = 'session_' . bin2hex(random_bytes(4)) . '@example.com';
+        $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'student');
+        $user = $this->users->loginUser($email, 'Secret123!');
+
+        $this->users->deleteUser($user['id']);
+
+        $this->assertNull($this->users->getSessionState($user['id']));
     }
 
     public function testPromotionLifecycle(): void

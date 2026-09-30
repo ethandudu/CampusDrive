@@ -36,9 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user = $userRepository->loginUser($_POST['email'], $_POST['password']);
 
     if ($user !== null) {
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['role'] = $user['role'];
-        $_SESSION['promotion_id'] = $user['promotion_id'];
+        startAuthenticatedSession($user);
         $_SESSION['locale'] = in_array($user['language'] ?? null, array_keys(SUPPORTED_LOCALES), true)
             ? $user['language']
             : DEFAULT_LOCALE;
