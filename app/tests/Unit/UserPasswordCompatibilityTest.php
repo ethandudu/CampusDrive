@@ -122,6 +122,18 @@ final class UserPasswordCompatibilityTest extends TestCase
         $this->assertNotNull($this->users->loginUser('legacy@example.com', 'NewSecret456!'));
     }
 
+    public function testVerifyPasswordAcceptsTheRawAndTheLegacyEncodedForms(): void
+    {
+        $this->insertUser('raw', password_hash(self::SPECIAL_PASSWORD, PASSWORD_DEFAULT));
+        $this->insertUser('legacy', password_hash(InputSanitizer::sanitize(self::SPECIAL_PASSWORD), PASSWORD_DEFAULT));
+
+        $this->assertTrue($this->users->verifyPassword('raw', self::SPECIAL_PASSWORD));
+        $this->assertTrue($this->users->verifyPassword('legacy', self::SPECIAL_PASSWORD));
+        $this->assertFalse($this->users->verifyPassword('raw', 'Wrong&Password1!'));
+        $this->assertFalse($this->users->verifyPassword('legacy', ''));
+        $this->assertFalse($this->users->verifyPassword('unknown', self::SPECIAL_PASSWORD));
+    }
+
     public function testWrongCurrentPasswordDoesNotChangeAnything(): void
     {
         $hash = password_hash('OldSecret123!', PASSWORD_DEFAULT);

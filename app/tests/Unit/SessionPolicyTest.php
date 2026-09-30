@@ -81,6 +81,22 @@ final class SessionPolicyTest extends TestCase
         $this->assertSame($expected, SessionPolicy::shouldUseSecureCookie($server, $configured));
     }
 
+    public function testSessionIsLockedOutAfterTooManyFailedReauthentications(): void
+    {
+        $this->assertFalse(SessionPolicy::isLockedOut([]));
+        $this->assertFalse(SessionPolicy::isLockedOut(['reauth_failures' => SessionPolicy::MAX_REAUTH_FAILURES - 1]));
+        $this->assertTrue(SessionPolicy::isLockedOut(['reauth_failures' => SessionPolicy::MAX_REAUTH_FAILURES]));
+    }
+
+    public function testAccountDeletionAndPasswordChangeCountWrongPasswords(): void
+    {
+        $settings = (string) file_get_contents(dirname(__DIR__, 2) . '/settings.php');
+
+        $this->assertStringContainsString('verifyPassword((string) $user[\'id\'], $current_password)', $settings);
+        $this->assertSame(2, substr_count($settings, 'recordFailedReauthentication();'));
+        $this->assertStringContainsString('name="current_password" autocomplete="current-password"', $settings);
+    }
+
     public function testSessionBootstrapHardensTheCookie(): void
     {
         $contents = (string) file_get_contents(dirname(__DIR__, 2) . '/utils/session.php');

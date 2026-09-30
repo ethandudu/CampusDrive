@@ -14,12 +14,26 @@ final class SessionPolicy
     public const ABSOLUTE_TIMEOUT = 43200;
 
     /**
+     * Wrong passwords tolerated when an open session asks for the password again
+     * (password change, account deletion) before the session is terminated.
+     */
+    public const MAX_REAUTH_FAILURES = 5;
+
+    /**
      * Changes whenever the stored password hash changes, which invalidates every
      * session opened with the previous password.
      */
     public static function fingerprint(string $passwordHash): string
     {
         return hash('sha256', $passwordHash);
+    }
+
+    /**
+     * @param array<string, mixed> $session
+     */
+    public static function isLockedOut(array $session): bool
+    {
+        return (int) ($session['reauth_failures'] ?? 0) >= self::MAX_REAUTH_FAILURES;
     }
 
     /**

@@ -88,17 +88,20 @@ final class UserRepository extends DatabaseRepository
         return null;
     }
 
-    public function updateUserPassword(string $userId, string $currentPassword, string $newPassword): bool
+    public function verifyPassword(string $userId, string $password): bool
     {
         $stmt = $this->connection()->prepare("SELECT password FROM users WHERE id = ?");
         $stmt->execute([$userId]);
         $user = $stmt->fetch();
 
-        if (
-            !$user
-            || !(password_verify($currentPassword, $user['password'])
-                || $this->matchesLegacyEncodedPassword($currentPassword, $user['password']))
-        ) {
+        return $user
+            && (password_verify($password, $user['password'])
+                || $this->matchesLegacyEncodedPassword($password, $user['password']));
+    }
+
+    public function updateUserPassword(string $userId, string $currentPassword, string $newPassword): bool
+    {
+        if (!$this->verifyPassword($userId, $currentPassword)) {
             return false; // Current password is incorrect
         }
 

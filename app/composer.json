@@ -16,6 +16,7 @@
     "autoload": {
         "psr-4": {
             "CampusDrive\\Infrastructure\\Database\\": "src/Infrastructure/Database/",
+            "CampusDrive\\Infrastructure\\Security\\": "src/Infrastructure/Security/",
             "CampusDrive\\Infrastructure\\Session\\": "src/Infrastructure/Session/",
             "CampusDrive\\Infrastructure\\Storage\\": "src/Infrastructure/Storage/"
         }

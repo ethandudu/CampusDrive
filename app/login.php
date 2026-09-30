@@ -19,6 +19,10 @@ if (isset($_GET['registered'])){
     $message = t('registration_success');
 }
 
+if (isset($_GET['locked'])) {
+    $error = t('too_many_attempts');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         die(t('security_error'));

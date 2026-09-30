@@ -1,6 +1,7 @@
 <?php
 use CampusDrive\Infrastructure\Database\PromotionRepository;
 use CampusDrive\Infrastructure\Database\UserRepository;
+use CampusDrive\Infrastructure\Security\PasswordPolicy;
 
 require_once 'utils/db.php';
 
@@ -55,7 +56,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
 
 // Handle account deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_account') {
-    if ($userRepository->deleteUser((string) $user['id'])) {
+    $current_password = $_POST['current_password'] ?? '';
+
+    if (!is_string($current_password) || !$userRepository->verifyPassword((string) $user['id'], $current_password)) {
+        recordFailedReauthentication();
+        $error = t('current_password_incorrect');
+    } elseif ($userRepository->deleteUser((string) $user['id'])) {
         destroySession();
         header('Location: index.php');
         exit;
@@ -70,23 +76,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'chang
     $new_password = $_POST['new_password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
 
-
-
-    if ($new_password !== $confirm_password) {
+    if (!is_string($current_password) || !is_string($new_password) || !is_string($confirm_password)) {
+        $error = t('generic_error');
+    } elseif ($new_password !== $confirm_password) {
         $error = t('password_mismatch');
+    } elseif (($passwordViolation = PasswordPolicy::violation($new_password)) !== null) {
+        $error = t($passwordViolation);
+    } elseif (!$userRepository->updateUserPassword((string) $_SESSION['user_id'], $current_password, $new_password)) {
+        recordFailedReauthentication();
+        $error = t('current_password_incorrect');
     } else {
-        // Update the user's password
-        if($userRepository->updateUserPassword((string) $_SESSION['user_id'], $current_password, $new_password)) {
-            // The new hash invalidates every other session of this user; keep only the current device signed in.
-            startAuthenticatedSession($userRepository->getSessionState((string) $_SESSION['user_id']));
+        // The new hash invalidates every other session of this user; keep only the current device signed in.
+        startAuthenticatedSession($userRepository->getSessionState((string) $_SESSION['user_id']));
 
-            $passwordChangedEmail = passwordChangedEmailTemplate();
-            (new Mailer())->sendMail($user['email'], $passwordChangedEmail['subject'], $passwordChangedEmail['body']);
+        $passwordChangedEmail = passwordChangedEmailTemplate();
+        (new Mailer())->sendMail($user['email'], $passwordChangedEmail['subject'], $passwordChangedEmail['body']);
 
-            $success = t('password_change_success');
-        } else {
-            $error = t('password_change_error');
-        }
+        $success = t('password_change_success');
     }
 }
 
@@ -218,6 +224,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <form method="POST" action="" onsubmit="return confirm('<?= t('confirm_account_deletion') ?>');">
                         <input type="hidden" name="action" value="delete_account">
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                        <div class="mb-3">
+                            <label class="form-label"><?= t('current_password') ?></label>
+                            <input type="password" class="form-control" name="current_password" autocomplete="current-password" required>
+                        </div>
                         <button type="submit" class="btn btn-danger"><?= t('delete_account') ?></button>
                     </form>
                 </div>

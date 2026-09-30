@@ -21,6 +21,28 @@ function startAuthenticatedSession(array $user): void
     $_SESSION['auth_fingerprint'] = SessionPolicy::fingerprint($user['password']);
     $_SESSION['auth_time'] = $_SESSION['last_activity'] = time();
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    clearFailedReauthentications();
+}
+
+/**
+ * Counts a wrong password typed in an already authenticated session. Once the limit is
+ * reached the session is terminated and the user is sent back to the login page, so a
+ * stolen session cannot be used to guess the current password.
+ */
+function recordFailedReauthentication(): void
+{
+    $_SESSION['reauth_failures'] = (int) ($_SESSION['reauth_failures'] ?? 0) + 1;
+
+    if (SessionPolicy::isLockedOut($_SESSION)) {
+        destroySession();
+        header('Location: login.php?locked=1');
+        exit;
+    }
+}
+
+function clearFailedReauthentications(): void
+{
+    unset($_SESSION['reauth_failures']);
 }
 
 function destroySession(): void
