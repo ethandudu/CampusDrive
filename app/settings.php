@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
     if (!array_key_exists($language, SUPPORTED_LOCALES)) {
         $error = t('invalid_language');
     } else {
-        $userRepository->updateUserLanguage((int) $user['id'], $language);
+        $userRepository->updateUserLanguage((string) $user['id'], $language);
         $_SESSION['locale'] = $language;
         header('Location: settings.php?success=language_updated');
         exit;

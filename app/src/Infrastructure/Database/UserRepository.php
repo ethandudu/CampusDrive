@@ -53,7 +53,7 @@ final class UserRepository extends DatabaseRepository
         return $stmt->fetch() ?: null;
     }
 
-    public function updateUserLanguage(int $userId, string $language): bool
+    public function updateUserLanguage(string $userId, string $language): bool
     {
         if (!in_array($language, ['fr', 'en'], true)) {
             throw new InvalidArgumentException('Unsupported language.');
