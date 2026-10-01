@@ -32,7 +32,9 @@ final class DatabaseConnection
                     ]
                 );
             } catch (PDOException $e) {
-                die('Erreur de connexion à la base de données : ' . $e->getMessage());
+                error_log('Database connection failed: ' . $e->getMessage());
+                http_response_code(503);
+                die('Service temporairement indisponible.');
             }
         }
 
