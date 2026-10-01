@@ -315,7 +315,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             const hasUppercase = /[A-Z]/.test(password);
             const hasLowercase = /[a-z]/.test(password);
             const hasNumber = /[0-9]/.test(password);
-            const hasSpecial = /[!@#$%^&*()-+]/.test(password);
+            const hasSpecial = /[!@#$%^&*()+-]/.test(password);
 
             toggleRuleState('length', hasValidLength);
             toggleRuleState('uppercase', hasUppercase);

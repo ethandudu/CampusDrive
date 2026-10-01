@@ -84,8 +84,8 @@ final class FileRepository extends DatabaseRepository
             return !empty($candidate['parent_id']) && (string) $candidate['parent_id'] === $folder_id;
         }));
 
-        $filesStmt = $this->connection()->prepare("SELECT f.id, f.created_at, f.folder_id, f.original_name, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.folder_id = ? AND f.status = 'approved' ORDER BY f.created_at DESC");
-        $filesStmt->execute([$folder_id]);
+        $filesStmt = $this->connection()->prepare("SELECT f.id, f.created_at, f.folder_id, f.original_name, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.folder_id = ? AND f.promotion_id = ? AND f.status = 'approved' ORDER BY f.created_at DESC");
+        $filesStmt->execute([$folder_id, $promotion_id]);
         $files = $filesStmt->fetchAll();
 
         $parentFolder = null;

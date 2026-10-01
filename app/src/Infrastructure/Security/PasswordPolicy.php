@@ -34,7 +34,7 @@ final class PasswordPolicy
             return 'password_number';
         }
 
-        if (!preg_match('/[!@#$%^&*()-+]/', $password)) {
+        if (!preg_match('/[!@#$%^&*()+-]/', $password)) {
             return 'password_special';
         }
 

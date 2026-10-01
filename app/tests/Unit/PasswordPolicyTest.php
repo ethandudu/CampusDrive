@@ -18,6 +18,7 @@ final class PasswordPolicyTest extends TestCase
             'empty' => ['', 'password_length'],
             'too short' => ['Ab1!xyz', 'password_length'],
             'minimum length' => ['Abcdef1!', null],
+            'hyphen special character' => ['Abcdef1-', null],
             'maximum length' => [str_repeat('a', 60) . 'A1!b', null],
             'too long' => [str_repeat('a', 61) . 'A1!b', 'password_length'],
             'no uppercase' => ['secret123!', 'password_uppercase'],
