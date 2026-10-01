@@ -37,6 +37,7 @@ services:
 
 volumes:
   mariadb_data:
+  uploads_data:
 
 networks:
     campusdrive_network:
