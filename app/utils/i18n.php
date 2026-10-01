@@ -101,6 +101,9 @@ function translations(): array
             'delete_account' => 'Supprimer le compte',
             'account_deletion_error' => 'Erreur lors de la suppression du compte.',
             'invitation_deleted' => 'Invitation supprimée avec succès.',
+            'maintenance_title' => 'Maintenance en cours',
+            'maintenance_message' => 'CampusDrive est temporairement indisponible pour cause de maintenance. Nous serons de retour très bientôt.',
+            'maintenance_retry' => 'Merci de réessayer dans quelques instants.',
         ],
         'en' => [
             'login' => 'Sign in', 'email' => 'Email address', 'password' => 'Password',
@@ -187,6 +190,9 @@ function translations(): array
             'delete_account' => 'Delete account',
             'account_deletion_error' => 'An error occurred while deleting the account.',
             'invitation_deleted' => 'Invitation deleted successfully.',
+            'maintenance_title' => 'Maintenance in progress',
+            'maintenance_message' => 'CampusDrive is temporarily unavailable due to maintenance. We will be back very soon.',
+            'maintenance_retry' => 'Please try again in a few moments.',
         ],
     ];
 
