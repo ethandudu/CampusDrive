@@ -39,4 +39,4 @@ volumes:
 
 networks:
     campusdrive_network:
-      - driver: bridge
+      driver: bridge
