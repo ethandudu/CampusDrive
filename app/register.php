@@ -237,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 document.getElementById('number').classList.remove('text-danger');
                 document.getElementById('number').classList.add('text-success');
             }
-            if (!/[!@#$%^&*()-+]/.test(password)) {
+            if (!/[!@#$%^&*()+-]/.test(password)) {
                 isValid = false;
                 document.getElementById('special').classList.remove('text-success');
                 document.getElementById('special').classList.add('text-danger');
