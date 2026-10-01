@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Handle invitation deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['invitation_id'])) {
     $invitation_id = htmlspecialchars($_POST['invitation_id']);
-    $invitationRepository->deleteInvitation($invitation_id);
+    $invitationRepository->deleteInvitation($invitation_id, $_SESSION['promotion_id']);
     header('Location: delegate.php?success=invitation_deleted');
     exit;
 }

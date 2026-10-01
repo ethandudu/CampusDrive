@@ -35,10 +35,10 @@ final class InvitationRepository extends DatabaseRepository
         return $stmt->execute([InputSanitizer::sanitize($email), $promotion_id, InputSanitizer::sanitize($token)]);
     }
 
-    public function deleteInvitation(string $invitation_id): bool
+    public function deleteInvitation(string $invitation_id, string $promotion_id): bool
     {
-        $stmt = $this->connection()->prepare("DELETE FROM invitations WHERE id = ?");
-        return $stmt->execute([InputSanitizer::sanitize($invitation_id)]);
+        $stmt = $this->connection()->prepare("DELETE FROM invitations WHERE id = ? AND promotion_id = ?");
+        return $stmt->execute([InputSanitizer::sanitize($invitation_id), InputSanitizer::sanitize($promotion_id)]);
     }
 
     public function getPromotionInvitations(string $promotion_id): array
