@@ -4,4 +4,5 @@ app/uploads
 /uploads
 vendor
 app/utils/config.php
+app/.maintenance
 app/.phpunit.cache

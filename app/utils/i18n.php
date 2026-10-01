@@ -107,6 +107,9 @@ function translations(): array
             'revoke_sessions' => 'Déconnecter mes autres sessions',
             'sessions_revoked' => 'Toutes vos autres sessions ont été déconnectées.',
             'invitation_deleted' => 'Invitation supprimée avec succès.',
+            'maintenance_title' => 'Maintenance en cours',
+            'maintenance_message' => 'CampusDrive est temporairement indisponible pour cause de maintenance. Nous serons de retour très bientôt.',
+            'maintenance_retry' => 'Merci de réessayer dans quelques instants.',
         ],
         'en' => [
             'login' => 'Sign in', 'email' => 'Email address', 'password' => 'Password',
@@ -199,6 +202,9 @@ function translations(): array
             'revoke_sessions' => 'Sign out my other sessions',
             'sessions_revoked' => 'All your other sessions have been signed out.',
             'invitation_deleted' => 'Invitation deleted successfully.',
+            'maintenance_title' => 'Maintenance in progress',
+            'maintenance_message' => 'CampusDrive is temporarily unavailable due to maintenance. We will be back very soon.',
+            'maintenance_retry' => 'Please try again in a few moments.',
         ],
     ];
 
