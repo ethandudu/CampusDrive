@@ -7,6 +7,7 @@ services:
       MYSQL_DATABASE: campusdrive
       MYSQL_USER: campususer
       MYSQL_PASSWORD: campuspassword
+    restart: unless-stopped
     ports:
       - "3306:3306"
     volumes:
@@ -27,6 +28,7 @@ services:
       MYSQL_DATABASE: campusdrive
       MYSQL_USER: campususer
       MYSQL_PASSWORD: campuspassword
+    restart: unless-stopped
 
 volumes:
   mariadb_data:
