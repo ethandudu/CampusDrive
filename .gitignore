@@ -1,6 +1,5 @@
 .idea
 app/dCaptcha
-app/uploads
 /uploads
 vendor
 app/utils/config.php

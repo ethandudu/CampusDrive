@@ -9,23 +9,15 @@ namespace CampusDrive\Infrastructure\Storage;
 final class UploadStorage
 {
     private string $directory;
-    private string $legacyDirectory;
 
-    public function __construct(?string $directory = null, ?string $legacyDirectory = null)
+    public function __construct(?string $directory = null)
     {
         $this->directory = rtrim($directory ?? self::defaultDirectory(), '/\\');
-        // Files uploaded before the move used to live in app/uploads (inside the web root).
-        $this->legacyDirectory = rtrim($legacyDirectory ?? dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'uploads', '/\\');
     }
 
     public function directory(): string
     {
         return $this->directory;
-    }
-
-    public function legacyDirectory(): string
-    {
-        return $this->legacyDirectory;
     }
 
     public function generateName(string $extension): string
@@ -54,11 +46,10 @@ final class UploadStorage
             return null;
         }
 
-        foreach ([$this->directory, $this->legacyDirectory] as $directory) {
-            $path = $directory . DIRECTORY_SEPARATOR . $name;
-            if (is_file($path)) {
-                return $path;
-            }
+        $directory = $this->directory;
+        $path = $directory . DIRECTORY_SEPARATOR . $name;
+        if (is_file($path)) {
+            return $path;
         }
 
         return null;
@@ -71,44 +62,13 @@ final class UploadStorage
             return;
         }
 
-        foreach ([$this->directory, $this->legacyDirectory] as $directory) {
-            $path = $directory . DIRECTORY_SEPARATOR . $name;
-            if (is_file($path)) {
-                unlink($path);
-            }
+        $directory = $this->directory;
+        $path = $directory . DIRECTORY_SEPARATOR . $name;
+        if (is_file($path)) {
+            unlink($path);
         }
     }
 
-    /**
-     * Moves the files left in the legacy (web-accessible) directory to the private one.
-     *
-     * @return array{moved: int, failed: string[]}
-     */
-    public function migrateLegacyFiles(): array
-    {
-        $result = ['moved' => 0, 'failed' => []];
-
-        if (!is_dir($this->legacyDirectory) || !$this->prepareDirectory()) {
-            return $result;
-        }
-
-        foreach (scandir($this->legacyDirectory) ?: [] as $name) {
-            $source = $this->legacyDirectory . DIRECTORY_SEPARATOR . $name;
-            if ($name[0] === '.' || !is_file($source)) {
-                continue;
-            }
-
-            $destination = $this->pathFor($name);
-            // rename() fails across filesystems (e.g. bind mount to a volume), so fall back to copy.
-            if (!file_exists($destination) && (@rename($source, $destination) || (copy($source, $destination) && unlink($source)))) {
-                $result['moved']++;
-            } else {
-                $result['failed'][] = $name;
-            }
-        }
-
-        return $result;
-    }
 
     private static function defaultDirectory(): string
     {

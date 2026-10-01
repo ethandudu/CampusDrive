@@ -112,20 +112,6 @@ final class UploadStorageTest extends TestCase
         $this->assertNull($storage->find('b.pdf'));
     }
 
-    public function testMigrateLegacyFilesMovesThemToThePrivateDirectory(): void
-    {
-        $storage = new UploadStorage($this->private, $this->legacy);
-        file_put_contents($this->legacy . '/one.pdf', '1');
-        file_put_contents($this->legacy . '/two.png', '2');
-
-        $result = $storage->migrateLegacyFiles();
-
-        $this->assertSame(['moved' => 2, 'failed' => []], $result);
-        $this->assertFileExists($this->private . '/one.pdf');
-        $this->assertFileDoesNotExist($this->legacy . '/one.pdf');
-        $this->assertSame('2', file_get_contents($this->private . '/two.png'));
-    }
-
     public function testPagesUseTheUploadStorageInsteadOfTheWebRootDirectory(): void
     {
         $root = dirname(__DIR__, 2);
