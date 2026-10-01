@@ -209,6 +209,7 @@ if (!$my_pending_files) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const locale = <?= json_encode(locale()) ?>;
+    const folderStorageKey = <?= json_encode('student_current_folder_' . $promo_id, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     const labels = <?= json_encode([
         'back' => t('back'),
         'view' => t('view'),
@@ -222,7 +223,7 @@ if (!$my_pending_files) {
     }[char]));
 
     function openFolder(folderId) {
-        sessionStorage.setItem('student_current_folder', folderId === null || folderId === undefined ? 'null' : folderId);
+        sessionStorage.setItem(folderStorageKey, folderId === null || folderId === undefined ? 'null' : folderId);
         document.querySelector('#uploadFolderIdInput').value = folderId === null || folderId === undefined ? '' : folderId;
 
         fetch(`student.php?folderId=${encodeURIComponent(folderId)}`)
@@ -304,9 +305,8 @@ if (!$my_pending_files) {
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        const storageKey = <?= json_encode('student_current_folder_' . $promo_id, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-        const savedFolder = sessionStorage.getItem(storageKey);
-        openFolder(savedFolder && savedFolder !== 'null' ? Number(savedFolder) : null);
+        const savedFolder = sessionStorage.getItem(folderStorageKey);
+        openFolder(savedFolder && savedFolder !== 'null' ? savedFolder : null);
     });
 </script>
 </body>
