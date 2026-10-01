@@ -76,8 +76,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
             $stored_name = $storage->generateName($ext);
 
             if ($storage->prepareDirectory() && move_uploaded_file($file['tmp_name'], $storage->pathFor($stored_name))) {
-                $fileRepository->createFileRecord($user_id, $promo_id, $display_name, $stored_name, $mime_type, $folder_id);
-                $message = t('file_uploaded');
+                if ($fileRepository->createFileRecord($user_id, $promo_id, $display_name, $stored_name, $mime_type, $folder_id)) {
+                    $message = t('file_uploaded');
+                } else {
+                    $error = t('file_save_error');
+                }
             } else {
                 $error = t('file_save_error');
             }
