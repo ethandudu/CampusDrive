@@ -244,41 +244,49 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                     </div>
                 </div>
             </div>
-            <div class="card shadow-sm mt-4">
-                <div class="card-header bg-white fw-bold"><?= t('files_pending') ?></div>
-                <div class="card-body p-0">
-                    <?php if (empty($pending_files)): ?>
-                        <p class="text-muted p-3 mb-0"><?= t('no_files_pending') ?></p>
-                    <?php else: ?>
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                            <tr>
-                                <th><?= t('file') ?></th>
-                                <th><?= t('author') ?></th>
-                                <th><?= t('action') ?></th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <?php foreach ($pending_files as $pf): ?>
-                                <tr>
-                                    <td class="align-middle">
-                                        <b><?= htmlspecialchars($pf['original_name']) ?></b>
-                                    </td>
-                                    <td class="align-middle"><?= htmlspecialchars($pf['uploader_email']) ?></td>
-                                    <td class="align-middle">
-                                        <a href="view.php?id=<?= $pf['id'] ?>" target="_blank" class="btn btn-sm btn-outline-info me-2"><?= t('preview') ?></a>
-                                        <form method="POST" class="d-inline">
-                                            <input type="hidden" name="file_id" value="<?= $pf['id'] ?>">
-                                            <button type="submit" name="file_action" value="approve" class="btn btn-sm btn-success"><?= t('approve') ?></button>
-                                            <button type="submit" name="file_action" value="reject" class="btn btn-sm btn-danger"><?= t('reject') ?></button>
-                                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                                        </form>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
+            <div class="accordion mt-4" id="pendingFilesAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePendingFiles" aria-expanded="false" aria-controls="collapsePendingFiles">
+                            <?= t('files_pending') ?> (<?= count($pending_files) ?>)
+                        </button>
+                    </h2>
+                    <div id="collapsePendingFiles" class="accordion-collapse collapse">
+                        <div class="accordion-body p-0">
+                            <?php if (empty($pending_files)): ?>
+                                <p class="text-muted p-3 mb-0"><?= t('no_files_pending') ?></p>
+                            <?php else: ?>
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                    <tr>
+                                        <th><?= t('file') ?></th>
+                                        <th><?= t('author') ?></th>
+                                        <th><?= t('action') ?></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php foreach ($pending_files as $pf): ?>
+                                        <tr>
+                                            <td class="align-middle">
+                                                <b><?= htmlspecialchars($pf['original_name']) ?></b>
+                                            </td>
+                                            <td class="align-middle"><?= htmlspecialchars($pf['uploader_email']) ?></td>
+                                            <td class="align-middle">
+                                                <a href="view.php?id=<?= $pf['id'] ?>" target="_blank" class="btn btn-sm btn-outline-info me-2"><?= t('preview') ?></a>
+                                                <form method="POST" class="d-inline">
+                                                    <input type="hidden" name="file_id" value="<?= $pf['id'] ?>">
+                                                    <button type="submit" name="file_action" value="approve" class="btn btn-sm btn-success"><?= t('approve') ?></button>
+                                                    <button type="submit" name="file_action" value="reject" class="btn btn-sm btn-danger"><?= t('reject') ?></button>
+                                                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="card shadow-sm mt-4">
