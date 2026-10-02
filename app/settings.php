@@ -1,7 +1,16 @@
 <?php
+use CampusDrive\Infrastructure\Database\PromotionRepository;
+use CampusDrive\Infrastructure\Database\UserRepository;
+use CampusDrive\Infrastructure\Security\PasswordPolicy;
+
 require_once 'utils/db.php';
+
+$userRepository = new UserRepository();
+$promotionRepository = new PromotionRepository();
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
+require_once 'utils/mail.php';
+require_once 'utils/emailTemplates/password_changed.php';
 
 if (!isset($_SESSION['user_id'])) { header('Location: login.php'); exit; }
 if (empty($_SESSION['csrf_token'])) {
@@ -23,19 +32,22 @@ if (isset($_GET['error'])) {
     }
 }
 
-$user = Database::getUserDetails($_SESSION['user_id']);
+// Every state-changing request must carry a valid CSRF token.
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !is_string($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die(t('security_error'));
+    }
+}
+
+$user = $userRepository->getUserDetails($_SESSION['user_id']);
 
 // Handle language update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_language') {
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        die(t('security_error'));
-    }
-
     $language = $_POST['language'] ?? '';
     if (!array_key_exists($language, SUPPORTED_LOCALES)) {
         $error = t('invalid_language');
     } else {
-        Database::updateUserLanguage((int) $user['id'], $language);
+        $userRepository->updateUserLanguage((string) $user['id'], $language);
         $_SESSION['locale'] = $language;
         header('Location: settings.php?success=language_updated');
         exit;
@@ -44,11 +56,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
 
 // Handle account deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_account') {
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        die(t('security_error'));
-    }
-    if (Database::deleteUser((string) $user['id'])) {
-        session_destroy();
+    $current_password = $_POST['current_password'] ?? '';
+
+    if (!is_string($current_password) || !$userRepository->verifyPassword((string) $user['id'], $current_password)) {
+        recordFailedReauthentication();
+        $error = t('current_password_incorrect');
+    } elseif ($userRepository->deleteUser((string) $user['id'])) {
+        destroySession();
         header('Location: index.php');
         exit;
     } else {
@@ -58,24 +72,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
 
 // Handle password change
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'change_password') {
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        die(t('security_error'));
-    }
     $current_password = $_POST['current_password'] ?? '';
     $new_password = $_POST['new_password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
 
-
-
-    if ($new_password !== $confirm_password) {
+    if (!is_string($current_password) || !is_string($new_password) || !is_string($confirm_password)) {
+        $error = t('generic_error');
+    } elseif ($new_password !== $confirm_password) {
         $error = t('password_mismatch');
+    } elseif (($passwordViolation = PasswordPolicy::violation($new_password)) !== null) {
+        $error = t($passwordViolation);
+    } elseif (!$userRepository->updateUserPassword((string) $_SESSION['user_id'], $current_password, $new_password)) {
+        recordFailedReauthentication();
+        $error = t('current_password_incorrect');
     } else {
-        // Update the user's password
-        if(Database::updateUserPassword((string) $_SESSION['user_id'], $current_password, $new_password)) {
-            $success = t('password_change_success');
-        } else {
-            $error = t('password_change_error');
-        }
+        // The new hash invalidates every other session of this user; keep only the current device signed in.
+        startAuthenticatedSession($userRepository->getSessionState((string) $_SESSION['user_id']));
+
+        $passwordChangedEmail = passwordChangedEmailTemplate();
+        (new Mailer())->sendMail($user['email'], $passwordChangedEmail['subject'], $passwordChangedEmail['body']);
+
+        $success = t('password_change_success');
+    }
+}
+
+// Sign out every other session of this account
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'revoke_other_sessions') {
+    $current_password = $_POST['current_password'] ?? '';
+
+    if (!is_string($current_password) || !$userRepository->rotatePasswordHash((string) $_SESSION['user_id'], $current_password)) {
+        recordFailedReauthentication();
+        $error = t('current_password_incorrect');
+    } else {
+        // Other sessions are bound to the previous hash; only this one is reopened with the new hash.
+        startAuthenticatedSession($userRepository->getSessionState((string) $_SESSION['user_id']));
+        $success = t('sessions_revoked');
     }
 }
 
@@ -86,8 +117,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     } else {
         $promo_name = trim($_POST['promo_name']);
         try {
-            $new_promo_id = Database::createPromotion($promo_name);
-            Database::attachUserToPromotion($user['id'], $new_promo_id);
+            $new_promo_id = $promotionRepository->createPromotion($promo_name);
+            $promotionRepository->attachUserToPromotion($user['id'], $new_promo_id);
 
             $_SESSION['promotion_id'] = $new_promo_id;
             $success = t('promotion_request_success');
@@ -118,7 +149,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 <a href="delegate.php" class="btn btn-outline-light btn-sm me-2"><?= t('delegate_area') ?></a>
             <?php endif; ?>
             <a href="settings.php" class="btn btn-light btn-sm me-2"><?= t('settings') ?></a>
-            <a href="logout.php" class="btn btn-outline-danger btn-sm"><?= t('logout') ?></a>
+            <form method="POST" action="logout.php" class="d-inline">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                <button type="submit" class="btn btn-outline-danger btn-sm"><?= t('logout') ?></button>
+            </form>
         </div>
     </div>
 </nav>
@@ -204,6 +238,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <form method="POST" action="" onsubmit="return confirm('<?= t('confirm_account_deletion') ?>');">
                         <input type="hidden" name="action" value="delete_account">
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                        <div class="mb-3">
+                            <label class="form-label"><?= t('current_password') ?></label>
+                            <input type="password" class="form-control" name="current_password" autocomplete="current-password" required>
+                        </div>
                         <button type="submit" class="btn btn-danger"><?= t('delete_account') ?></button>
                     </form>
                 </div>
@@ -219,11 +257,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                         <div class="mb-3">
                             <label class="form-label"><?= t('current_password') ?></label>
-                            <input type="password" class="form-control" name="current_password" required>
+                            <input type="password" class="form-control" id="current_password" name="current_password" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label"><?= t('new_password') ?></label>
-                            <input type="password" class="form-control" name="new_password" required>
+                            <input type="password" class="form-control" id="new_password" name="new_password" required>
                             <ul>
                                 <li id="length" class="text-danger"><?= t('password_length') ?></li>
                                 <li id="uppercase" class="text-danger"><?= t('password_uppercase') ?></li>
@@ -234,9 +272,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         </div>
                         <div class="mb-3">
                             <label class="form-label"><?= t('confirm_password') ?></label>
-                            <input type="password" class="form-control" name="confirm_password" required>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required disabled>
                         </div>
-                        <button type="submit" class="btn btn-primary"><?= t('change_password') ?></button>
+                        <button type="submit" class="btn btn-primary" id="change_password_btn" disabled><?= t('change_password') ?></button>
+                    </form>
+                </div>
+            </div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white fw-bold"><?= t('active_sessions') ?></div>
+                <div class="card-body">
+                    <p><?= t('revoke_sessions_help') ?></p>
+                    <form method="POST" action="">
+                        <input type="hidden" name="action" value="revoke_other_sessions">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                        <div class="mb-3">
+                            <label class="form-label"><?= t('current_password') ?></label>
+                            <input type="password" class="form-control" name="current_password" autocomplete="current-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-outline-danger"><?= t('revoke_sessions') ?></button>
                     </form>
                 </div>
             </div>
@@ -246,56 +299,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 <script>
     <!--    check userpass complexity -->
     document.addEventListener('DOMContentLoaded', function() {
-        const passwordInput = document.querySelector('input[name="new_password"]');
-        const submitButton = document.querySelector('button[type="submit"]');
+        const currentPasswordInput = document.getElementById('current_password');
+        const newPasswordInput = document.getElementById('new_password');
+        const confirmPasswordInput = document.getElementById('confirm_password');
+        const submitButton = document.getElementById('change_password_btn');
 
-        passwordInput.addEventListener('input', function() {
-            const password = this.value;
-            let isValid = true;
+        function toggleRuleState(ruleId, isValid) {
+            const ruleElement = document.getElementById(ruleId);
+            ruleElement.classList.toggle('text-success', isValid);
+            ruleElement.classList.toggle('text-danger', !isValid);
+        }
 
-            // Check password complexity
-            if (password.length < 8 || password.length > 64) {
-                isValid = false;
-                document.getElementById('length').classList.remove('text-success');
-                document.getElementById('length').classList.add('text-danger');
-            } else {
-                document.getElementById('length').classList.remove('text-danger');
-                document.getElementById('length').classList.add('text-success');
+        function isNewPasswordValid(password) {
+            const hasValidLength = password.length >= 8 && password.length <= 64;
+            const hasUppercase = /[A-Z]/.test(password);
+            const hasLowercase = /[a-z]/.test(password);
+            const hasNumber = /[0-9]/.test(password);
+            const hasSpecial = /[!@#$%^&*()+-]/.test(password);
+
+            toggleRuleState('length', hasValidLength);
+            toggleRuleState('uppercase', hasUppercase);
+            toggleRuleState('lowercase', hasLowercase);
+            toggleRuleState('number', hasNumber);
+            toggleRuleState('special', hasSpecial);
+
+            return hasValidLength && hasUppercase && hasLowercase && hasNumber && hasSpecial;
+        }
+
+        function updatePasswordFormState() {
+            const currentPassword = currentPasswordInput.value;
+            const newPassword = newPasswordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            const newPasswordIsValid = isNewPasswordValid(newPassword);
+            confirmPasswordInput.disabled = !newPasswordIsValid;
+
+            if (!newPasswordIsValid && confirmPasswordInput.value !== '') {
+                confirmPasswordInput.value = '';
             }
-            if (!/[A-Z]/.test(password)) {
-                isValid = false;
-                document.getElementById('uppercase').classList.remove('text-success');
-                document.getElementById('uppercase').classList.add('text-danger');
-            } else {
-                document.getElementById('uppercase').classList.remove('text-danger');
-                document.getElementById('uppercase').classList.add('text-success');
-            }
-            if (!/[a-z]/.test(password)) {
-                isValid = false;
-                document.getElementById('lowercase').classList.remove('text-success');
-                document.getElementById('lowercase').classList.add('text-danger');
-            } else {
-                document.getElementById('lowercase').classList.remove('text-danger');
-                document.getElementById('lowercase').classList.add('text-success');
-            }
-            if (!/[0-9]/.test(password)) {
-                isValid = false;
-                document.getElementById('number').classList.remove('text-success');
-                document.getElementById('number').classList.add('text-danger');
-            } else {
-                document.getElementById('number').classList.remove('text-danger');
-                document.getElementById('number').classList.add('text-success');
-            }
-            if (!/[!@#$%^&*()-+]/.test(password)) {
-                isValid = false;
-                document.getElementById('special').classList.remove('text-success');
-                document.getElementById('special').classList.add('text-danger');
-            } else {
-                document.getElementById('special').classList.remove('text-danger');
-                document.getElementById('special').classList.add('text-success');
-            }
-            submitButton.disabled = !isValid;
-        });
+
+            const passwordsMatch = newPasswordIsValid && confirmPassword !== '' && newPassword === confirmPassword;
+            const hasCurrentPassword = currentPassword.trim() !== '';
+
+            submitButton.disabled = !(hasCurrentPassword && passwordsMatch);
+        }
+
+        currentPasswordInput.addEventListener('input', updatePasswordFormState);
+        newPasswordInput.addEventListener('input', updatePasswordFormState);
+        confirmPasswordInput.addEventListener('input', updatePasswordFormState);
+
+        updatePasswordFormState();
     });
 </script>
 </body>

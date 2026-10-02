@@ -10,6 +10,7 @@ require_once __DIR__ . '/layout.php';
 function welcomeEmailTemplate(string $email): array
 {
     $subject = 'Bienvenue sur CampusDrive ! / Welcome to CampusDrive!';
+    $email = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
 
     $bodyFr = <<<HTML
 <h2 style="margin-top:0;color:#0d6efd;">Bienvenue sur CampusDrive !</h2>

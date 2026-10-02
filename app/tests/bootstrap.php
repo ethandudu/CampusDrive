@@ -40,3 +40,8 @@ PHP;
 
     file_put_contents($configFile, $contents);
 }
+
+// Loaded once here so every test can rely on the DB_* constants being
+// defined without requiring utils/config.php (a procedural file, not a
+// PSR-4 class) from each individual test.
+require_once $configFile;

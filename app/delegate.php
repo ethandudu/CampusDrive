@@ -1,5 +1,15 @@
 <?php
+use CampusDrive\Infrastructure\Database\FileRepository;
+use CampusDrive\Infrastructure\Database\InvitationRepository;
+use CampusDrive\Infrastructure\Database\PromotionRepository;
+use CampusDrive\Infrastructure\Database\UserRepository;
+
 require_once 'utils/db.php';
+
+$userRepository = new UserRepository();
+$promotionRepository = new PromotionRepository();
+$fileRepository = new FileRepository();
+$invitationRepository = new InvitationRepository();
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 require_once 'utils/mail.php';
@@ -16,7 +26,7 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-if (Database::getPromotionStatus($_SESSION['promotion_id']) == 'pending') {
+if ($promotionRepository->getPromotionStatus($_SESSION['promotion_id']) == 'pending') {
     header('Location: settings.php?error=promotion_inactive');
     exit;
 }
@@ -24,10 +34,15 @@ if (Database::getPromotionStatus($_SESSION['promotion_id']) == 'pending') {
 $success = '';
 $error = '';
 
-if (isset($_GET['error'])) {
+// Only known message keys are translated: the translations may contain trusted HTML,
+// so arbitrary user input must never reach t().
+$allowedErrorKeys = ['invalid_email_domain', 'email_already_invited'];
+$allowedSuccessKeys = ['invitation_deleted'];
+
+if (isset($_GET['error']) && is_string($_GET['error']) && in_array($_GET['error'], $allowedErrorKeys, true)) {
     $error = t($_GET['error']);
 }
-if (isset($_GET['success'])) {
+if (isset($_GET['success']) && is_string($_GET['success']) && in_array($_GET['success'], $allowedSuccessKeys, true)) {
     $success = t($_GET['success']);
 }
 
@@ -35,30 +50,30 @@ if (isset($_GET['folderId'])) {
     $folderId = ($_GET['folderId']) && $_GET['folderId'] !== 'null' && $_GET['folderId'] !== ''
         ? $_GET['folderId']
         : null;
-    $folderDetails = Database::getPromotionFolderFiles($folderId, $_SESSION['promotion_id']);
+    $folderDetails = $fileRepository->getPromotionFolderFiles($folderId, $_SESSION['promotion_id']);
 
     header('Content-Type: application/json');
     echo json_encode($folderDetails);
     exit;
 }
 
-// Handle invitation deletion
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['invitation_id'])) {
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+// Every state-changing request must carry a valid CSRF token.
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !is_string($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         die(t('security_error'));
     }
+}
+
+// Handle invitation deletion
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['invitation_id'])) {
     $invitation_id = htmlspecialchars($_POST['invitation_id']);
-    Database::deleteInvitation($invitation_id);
+    $invitationRepository->deleteInvitation($invitation_id, $_SESSION['promotion_id']);
     header('Location: delegate.php?success=invitation_deleted');
     exit;
 }
 
 // Handle invitation generation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        die(t('security_error'));
-    }
-
     //check if the email is in the allowed domains
     $email_domain = substr(strrchr($_POST['invite_email'], "@"), 1);
     if (!in_array($email_domain, UNIVERSITY_EMAIL_DOMAINS)) {
@@ -66,15 +81,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
         exit;
     }
 
-    if (Database::checkIfEmailIsAlreadyInvited($_POST['invite_email'], $_SESSION['promotion_id'])) {
+    if ($invitationRepository->checkIfEmailIsAlreadyInvited($_POST['invite_email'], $_SESSION['promotion_id'])) {
         header('Location: delegate.php?error=email_already_invited');
         exit;
     }
     $token = bin2hex(random_bytes(32));
 
-    Database::createInvitation($_POST['invite_email'], $_SESSION['promotion_id'], $token);
-
-    $promotionForInvite = Database::getPromotionDetails($_SESSION['promotion_id']);
+    $invitationRepository->createInvitation($_POST['invite_email'], $_SESSION['promotion_id'], $token);
+    $promotionForInvite = $promotionRepository->getPromotionDetails($_SESSION['promotion_id']);
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']);
     $registerLink = $baseUrl . '/register.php?token=' . urlencode($token);
@@ -89,39 +103,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         ? $_POST['parent_id']
         : null;
     if (!empty($folder_name)) {
-        Database::createFolder($_SESSION['promotion_id'], $parent_id, $folder_name);
+        $fileRepository->createFolder($_SESSION['promotion_id'], $parent_id, $folder_name);
     }
 }
 
 // Delete folder
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_folder') {
     $folder_id = $_POST['element_id'];
-    Database::deletePromotionFolder($folder_id);
+    $fileRepository->deletePromotionFolder($folder_id);
 }
 
 // Delete file
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_file') {
     $file_id = (string) $_POST['element_id'];
-    Database::rejectPromotionFile($file_id);
+    $fileRepository->rejectPromotionFile($file_id);
 }
 
 // Validation or rejection of files
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        die(t('security_error'));
-    }
     $file_id = (string) $_POST['file_id'];
-    $file = Database::getFile($file_id);
-    $uploader = $file ? Database::getUserDetails((string) $file['user_id']) : null;
+    $file = $fileRepository->getFile($file_id);
+    $uploader = $file ? $userRepository->getUserDetails((string) $file['user_id']) : null;
 
     if ($_POST['file_action'] === 'approve') {
-        Database::approvePromotionFile($file_id);
+        $fileRepository->approvePromotionFile($file_id);
         if ($file && $uploader && !empty($uploader['email'])) {
             $fileApprovedEmail = fileApprovedEmailTemplate($file['original_name']);
             (new Mailer())->sendMail($uploader['email'], $fileApprovedEmail['subject'], $fileApprovedEmail['body']);
         }
     } elseif ($_POST['file_action'] === 'reject') {
-        Database::rejectPromotionFile($file_id);
+        $fileRepository->rejectPromotionFile($file_id);
         if ($file && $uploader && !empty($uploader['email'])) {
             $fileRejectedEmail = fileRejectedEmailTemplate($file['original_name']);
             (new Mailer())->sendMail($uploader['email'], $fileRejectedEmail['subject'], $fileRejectedEmail['body']);
@@ -129,9 +140,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
     }
 }
 
-$pending_files = Database::getPromotionPendingFiles($_SESSION['promotion_id']);
-$promo = Database::getPromotionDetails($_SESSION['promotion_id']);
-$invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
+$pending_files = $fileRepository->getPromotionPendingFiles($_SESSION['promotion_id']);
+$promo = $promotionRepository->getPromotionDetails($_SESSION['promotion_id']);
+$invitations = $invitationRepository->getPromotionInvitations($_SESSION['promotion_id']);
 
 ?>
 <!DOCTYPE html>
@@ -151,7 +162,10 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
             <a href="student.php" class="btn btn-outline-light btn-sm me-2"><?= t('home') ?></a>
             <a href="delegate.php" class="btn btn-light btn-sm me-2"><?= t('delegate_area') ?></a>
             <a href="settings.php" class="btn btn-outline-light btn-sm me-2"><?= t('settings') ?></a>
-            <a href="logout.php" class="btn btn-outline-danger btn-sm"><?= t('logout') ?></a>
+            <form method="POST" action="logout.php" class="d-inline">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <button type="submit" class="btn btn-outline-danger btn-sm"><?= t('logout') ?></button>
+            </form>
         </div>
     </div>
 </nav>
@@ -339,8 +353,12 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
         'error' => t('generic_error'),
     ]) ?>;
 
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[char]));
+
     function openFolder(folderId) {
-        fetch(`delegate.php?folderId=${folderId}`)
+        fetch(`delegate.php?folderId=${encodeURIComponent(folderId)}`)
             .then(response => response.json())
             .then(data => {
                 const rows = [];
@@ -352,7 +370,7 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
                     rows.push(`
                         <tr>
                             <td>
-                                <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="openFolder('${previousFolderId}')">
+                                <button class="btn btn-sm btn-link p-0 text-decoration-none" data-action="open-folder" data-id="${escapeHtml(previousFolderId)}">
                                     📁.. / ${labels.back}
                                 </button>
                             </td>
@@ -364,17 +382,18 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
 
                 if (data.folders && data.folders.length) {
                     hasContent = true;
+                    // Folder names are stored already HTML-encoded (see FileRepository::createFolder).
                     data.folders.forEach(folder => {
                         rows.push(`
                             <tr>
                                 <td>
-                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" onclick="openFolder('${folder.id}')">
+                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" data-action="open-folder" data-id="${escapeHtml(folder.id)}">
                                         📁 ${folder.name}
                                     </button>
                                 </td>
                                 <td>${folder.created_at ? new Date(folder.created_at).toLocaleString(locale) : ''}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteFolder('${folder.id}')">${labels.delete}</button>
+                                    <button class="btn btn-sm btn-outline-danger" data-action="delete-folder" data-id="${escapeHtml(folder.id)}">${labels.delete}</button>
                                 </td>
                             </tr>
                         `);
@@ -386,9 +405,9 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
                     data.files.forEach(file => {
                         rows.push(`
                             <tr>
-                                <td>📄 ${file.original_name}</td>
+                                <td>📄 ${escapeHtml(file.original_name)}</td>
                                 <td>${file.created_at ? new Date(file.created_at).toLocaleString(locale) : ''}</td>
-                                <td><a href="view.php?id=${file.id}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a><button class="btn btn-sm btn-outline-danger" onclick="deleteFile('${file.id}')">${labels.delete}</button></td>
+                                <td><a href="view.php?id=${escapeHtml(encodeURIComponent(file.id))}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a><button class="btn btn-sm btn-outline-danger" data-action="delete-file" data-id="${escapeHtml(file.id)}">${labels.delete}</button></td>
                             </tr>
                         `);
                     });
@@ -417,6 +436,15 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
         document.querySelector('#deleteForm input[name="action"]').value = 'delete_file';
         new bootstrap.Modal(document.getElementById('deleteModal')).show();
     }
+
+    document.querySelector('#folderTable tbody').addEventListener('click', event => {
+        const button = event.target.closest('[data-action]');
+        if (!button) {
+            return;
+        }
+        const handlers = {'open-folder': openFolder, 'delete-folder': deleteFolder, 'delete-file': deleteFile};
+        handlers[button.dataset.action]?.(button.dataset.id);
+    });
 
     document.addEventListener('DOMContentLoaded', function () {
         openFolder(null);

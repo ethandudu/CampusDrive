@@ -8,8 +8,6 @@ services:
       MYSQL_USER: campususer
       MYSQL_PASSWORD: campuspassword
     restart: unless-stopped
-    ports:
-      - "3306:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -23,6 +21,7 @@ services:
       - "8080:80"
     volumes:
       - ./app:/var/www/html
+      - uploads_data:/var/www/uploads
     depends_on:
       - mariadb
     environment:
@@ -36,6 +35,7 @@ services:
 
 volumes:
   mariadb_data:
+  uploads_data:
 
 networks:
     campusdrive_network:

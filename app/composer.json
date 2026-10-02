@@ -7,10 +7,24 @@
     "require": {
         "php": ">=8.5",
         "phpmailer/phpmailer": "^7.1",
-      "ext-fileinfo": "*"
+      "ext-fileinfo": "*",
+      "ext-pdo": "*"
     },
     "config": {
         "optimize-autoloader": true
+    },
+    "autoload": {
+        "psr-4": {
+            "CampusDrive\\Infrastructure\\Database\\": "src/Infrastructure/Database/",
+            "CampusDrive\\Infrastructure\\Security\\": "src/Infrastructure/Security/",
+            "CampusDrive\\Infrastructure\\Session\\": "src/Infrastructure/Session/",
+            "CampusDrive\\Infrastructure\\Storage\\": "src/Infrastructure/Storage/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
     },
     "require-dev": {
         "phpunit/phpunit": "^11"

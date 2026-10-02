@@ -99,6 +99,66 @@ final class CsrfProtectionTest extends TestCase
     }
 
     /**
+     * Every `$_SERVER['REQUEST_METHOD'] === 'POST'` handler must be covered by a
+     * server-side CSRF check: either its own hash_equals() right after the
+     * condition, or an earlier handler that only tests the request method and
+     * validates the token for everything that follows.
+     *
+     * @dataProvider postFormFileProvider
+     */
+    public function testEveryPostHandlerIsCoveredByACsrfCheck(string $file): void
+    {
+        $contents = file_get_contents($file);
+        $this->assertNotFalse($contents, "Unable to read {$file}");
+
+        $marker = "\$_SERVER['REQUEST_METHOD'] === 'POST'";
+        $offset = 0;
+        $centralCheckSeen = false;
+
+        while (($position = strpos($contents, $marker, $offset)) !== false) {
+            $offset = $position + strlen($marker);
+            $next = strpos($contents, $marker, $offset);
+            $length = $next === false ? 400 : min(400, $next - $position);
+            $window = substr($contents, $position, $length);
+
+            $hasCheck = preg_match('/hash_equals\s*\(\s*\$_SESSION\s*\[\s*[\'"]csrf_token[\'"]\s*\]/', $window) === 1;
+            $onlyTestsMethod = preg_match('/^' . preg_quote($marker, '/') . '\s*\)\s*\{/', $window) === 1;
+
+            if ($hasCheck && $onlyTestsMethod) {
+                $centralCheckSeen = true;
+            }
+
+            $this->assertTrue(
+                $centralCheckSeen || $hasCheck,
+                sprintf(
+                    'A POST handler in %s (offset %d) is not protected by a csrf_token check.',
+                    basename($file),
+                    $position
+                )
+            );
+        }
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testLogoutRequiresAPostRequestWithAValidToken(): void
+    {
+        $logout = file_get_contents(dirname(__DIR__, 2) . '/logout.php');
+        $this->assertNotFalse($logout);
+
+        $this->assertStringContainsString("\$_SERVER['REQUEST_METHOD'] === 'POST'", $logout);
+        $this->assertMatchesRegularExpression('/hash_equals\s*\(\s*\$_SESSION\s*\[\s*[\'"]csrf_token[\'"]\s*\]/', $logout);
+
+        foreach (glob(dirname(__DIR__, 2) . '/*.php') ?: [] as $file) {
+            $this->assertStringNotContainsString(
+                'href="logout.php"',
+                (string) file_get_contents($file),
+                basename($file) . ' must not link to logout.php with a GET request.'
+            );
+        }
+    }
+
+    /**
      * Extracts the markup of a single form (from its opening tag to the
      * matching closing </form>), used to scope the csrf_token search to the
      * specific form rather than the whole file.

@@ -1,11 +1,22 @@
 <?php
+use CampusDrive\Infrastructure\Database\FileRepository;
+use CampusDrive\Infrastructure\Database\PromotionRepository;
+use CampusDrive\Infrastructure\Storage\UploadStorage;
+
 require_once 'utils/db.php';
+
+$promotionRepository = new PromotionRepository();
+$fileRepository = new FileRepository();
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
+}
+
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
 if (!$_SESSION['promotion_id']) {
@@ -17,7 +28,7 @@ $user_id = $_SESSION['user_id'];
 $promo_id = $_SESSION['promotion_id'];
 $message = ''; $error = '';
 
-if (Database::getPromotionStatus($promo_id) == 'pending') {
+if ($promotionRepository->getPromotionStatus($promo_id) == 'pending') {
     header('Location: settings.php?error=promotion_inactive');
     exit;
 }
@@ -26,7 +37,7 @@ if (isset($_GET['folderId'])) {
     $folder_id = ($_GET['folderId']) && $_GET['folderId'] !== 'null' && $_GET['folderId'] !== ''
         ? $_GET['folderId']
         : null;
-    $folder_details = Database::getPromotionFolderFiles($folder_id, $promo_id);
+    $folder_details = $fileRepository->getPromotionFolderFiles($folder_id, $promo_id);
 
     header('Content-Type: application/json');
     echo json_encode($folder_details);
@@ -61,18 +72,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
 
         if (array_key_exists($mime_type, $allowed_types)) {
             $ext = $allowed_types[$mime_type];
-            $stored_name = uniqid('file_', true) . '.' . $ext;
-            $upload_dir = __DIR__ . '/uploads/';
+            $storage = new UploadStorage();
+            $stored_name = $storage->generateName($ext);
 
-            if (!is_dir($upload_dir)) {
-                mkdir($upload_dir, 0777, true);
-            }
-
-            $destination = $upload_dir . $stored_name;
-
-            if (move_uploaded_file($file['tmp_name'], $destination)) {
-                Database::createFileRecord($user_id, $promo_id, $display_name, $stored_name, $mime_type, $folder_id);
-                $message = t('file_uploaded');
+            if ($storage->prepareDirectory() && move_uploaded_file($file['tmp_name'], $storage->pathFor($stored_name))) {
+                if ($fileRepository->createFileRecord($user_id, $promo_id, $display_name, $stored_name, $mime_type, $folder_id)) {
+                    $message = t('file_uploaded');
+                } else {
+                    $error = t('file_save_error');
+                }
             } else {
                 $error = t('file_save_error');
             }
@@ -84,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
     }
 }
 
-$my_pending_files = Database::getUserPendingFiles($user_id);
+$my_pending_files = $fileRepository->getUserPendingFiles($user_id);
 if (!$my_pending_files) {
     $count_pending = 0;
     $my_pending_files = [['original_name' => t('no_pending_uploads')]];
@@ -111,7 +119,10 @@ if (!$my_pending_files) {
                 <a href="delegate.php" class="btn btn-outline-light btn-sm me-2"><?= t('delegate_area') ?></a>
             <?php endif; ?>
             <a href="settings.php" class="btn btn-outline-light btn-sm me-2"><?= t('settings') ?></a>
-            <a href="logout.php" class="btn btn-outline-danger btn-sm"><?= t('logout') ?></a>
+            <form method="POST" action="logout.php" class="d-inline">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <button type="submit" class="btn btn-outline-danger btn-sm"><?= t('logout') ?></button>
+            </form>
         </div>
     </div>
 </nav>
@@ -198,6 +209,7 @@ if (!$my_pending_files) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const locale = <?= json_encode(locale()) ?>;
+    const folderStorageKey = <?= json_encode('student_current_folder_' . $promo_id, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     const labels = <?= json_encode([
         'back' => t('back'),
         'view' => t('view'),
@@ -206,11 +218,15 @@ if (!$my_pending_files) {
         'error' => t('generic_error'),
     ]) ?>;
 
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[char]));
+
     function openFolder(folderId) {
-        sessionStorage.setItem('student_current_folder', folderId === null || folderId === undefined ? 'null' : folderId);
+        sessionStorage.setItem(folderStorageKey, folderId === null || folderId === undefined ? 'null' : folderId);
         document.querySelector('#uploadFolderIdInput').value = folderId === null || folderId === undefined ? '' : folderId;
 
-        fetch(`student.php?folderId=${folderId}`)
+        fetch(`student.php?folderId=${encodeURIComponent(folderId)}`)
             .then(response => response.json())
             .then(data => {
                 const rows = [];
@@ -222,7 +238,7 @@ if (!$my_pending_files) {
                     rows.push(`
                         <tr>
                             <td>
-                                <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="openFolder('${previousFolderId}')">
+                                <button class="btn btn-sm btn-link p-0 text-decoration-none" data-folder-id="${escapeHtml(previousFolderId)}">
                                     📁.. / ${labels.back}
                                 </button>
                             </td>
@@ -234,11 +250,12 @@ if (!$my_pending_files) {
 
                 if (data.folders && data.folders.length) {
                     hasContent = true;
+                    // Folder names are stored already HTML-encoded (see FileRepository::createFolder).
                     data.folders.forEach(folder => {
                         rows.push(`
                             <tr>
                                 <td>
-                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" onclick="openFolder('${folder.id}')">
+                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" data-folder-id="${escapeHtml(folder.id)}">
                                         📁 ${folder.name}
                                     </button>
                                 </td>
@@ -254,9 +271,9 @@ if (!$my_pending_files) {
                     data.files.forEach(file => {
                         rows.push(`
                             <tr>
-                                <td>📄 ${file.original_name}</td>
+                                <td>📄 ${escapeHtml(file.original_name)}</td>
                                 <td>${file.created_at ? new Date(file.created_at).toLocaleString(locale) : ''}</td>
-                                <td><a href="view.php?id=${file.id}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a></td>
+                                <td><a href="view.php?id=${escapeHtml(encodeURIComponent(file.id))}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a></td>
                             </tr>
                         `);
                     });
@@ -273,6 +290,13 @@ if (!$my_pending_files) {
             .catch(error => console.error(labels.error, error));
     }
 
+    document.querySelector('#folderTable tbody').addEventListener('click', event => {
+        const button = event.target.closest('[data-folder-id]');
+        if (button) {
+            openFolder(button.dataset.folderId);
+        }
+    });
+
     document.querySelector('#uploadFileInput').addEventListener('change', function () {
         const nameInput = document.querySelector('#uploadFileNameInput');
         if (this.files.length && !nameInput.value) {
@@ -281,9 +305,8 @@ if (!$my_pending_files) {
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        const storageKey = 'student_current_folder_<?= htmlspecialchars($promo_id, ENT_QUOTES, 'UTF-8') ?>';
-        const savedFolder = sessionStorage.getItem(storageKey);
-        openFolder(savedFolder && savedFolder !== 'null' ? Number(savedFolder) : null);
+        const savedFolder = sessionStorage.getItem(folderStorageKey);
+        openFolder(savedFolder && savedFolder !== 'null' ? savedFolder : null);
     });
 </script>
 </body>

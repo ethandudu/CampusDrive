@@ -3,7 +3,14 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+use CampusDrive\Infrastructure\Database\InvitationRepository;
+use CampusDrive\Infrastructure\Database\UserRepository;
+use CampusDrive\Infrastructure\Security\PasswordPolicy;
+
 require_once 'utils/db.php';
+
+$userRepository = new UserRepository();
+$invitationRepository = new InvitationRepository();
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 require_once 'dCaptcha/captcha.php';
@@ -31,7 +38,7 @@ $promo_id = null;
 $role = 'delegate';
 
 if ($token) {
-    $invitation = Database::getInvitationByToken($token);
+    $invitation = $invitationRepository->getInvitationByToken($token);
 
     if ($invitation) {
         $invited_email = $invitation['email'];
@@ -61,16 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirm_password = $_POST['confirm_password'] ?? '';
     if ($password !== $confirm_password) {
         $error = t('password_mismatch');
-    } elseif (strlen($password) < 8 || strlen($password) > 64) {
-        $error = t('password_length');
-    } elseif (!preg_match('/[A-Z]/', $password)) {
-        $error = t('password_uppercase');
-    } elseif (!preg_match('/[a-z]/', $password)) {
-        $error = t('password_lowercase');
-    } elseif (!preg_match('/[0-9]/', $password)) {
-        $error = t('password_number');
-    } elseif (!preg_match('/[!@#$%^&*()-+]/', $password)) {
-        $error = t('password_special');
+    } elseif (($passwordViolation = PasswordPolicy::violation($password)) !== null) {
+        $error = t($passwordViolation);
     }
 
     $email = htmlspecialchars(trim($_POST['email']));
@@ -91,8 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($token && is_array($invitation)) {
                 $role = $invitation['role'] ?? 'student';
             }
-            if (Database::createUser($email, $password, $promo_id, $role)) {
-                Database::markInvitationAsUsed($token);
+            if ($userRepository->createUser($email, $password, $promo_id, $role)) {
+                $invitationRepository->markInvitationAsUsed($token);
                 $welcomeEmail = welcomeEmailTemplate($email);
                 (new Mailer)->sendMail($email, $welcomeEmail['subject'], $welcomeEmail['body']);
                 header("Location: login.php?registered=1");
@@ -238,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 document.getElementById('number').classList.remove('text-danger');
                 document.getElementById('number').classList.add('text-success');
             }
-            if (!/[!@#$%^&*()-+]/.test(password)) {
+            if (!/[!@#$%^&*()+-]/.test(password)) {
                 isValid = false;
                 document.getElementById('special').classList.remove('text-success');
                 document.getElementById('special').classList.add('text-danger');
