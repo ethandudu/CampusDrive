@@ -64,5 +64,13 @@ CREATE TABLE logs (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE settings (
+    setting_key VARCHAR(255) UNIQUE NOT NULL PRIMARY KEY ,
+    value TEXT NOT NULL
+);
+
+INSERT INTO settings (setting_key, value)
+VALUES ('db_version', '1.0'), ('announcement_text', 'Bienvenue sur CampusDrive !'), ('announcement_enabled', 'false');
+
 INSERT INTO users (email, password, role)
 VALUES ('admin@campusdrive.fr', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');

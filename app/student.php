@@ -1,6 +1,7 @@
 <?php
 use CampusDrive\Infrastructure\Database\FileRepository;
 use CampusDrive\Infrastructure\Database\PromotionRepository;
+use CampusDrive\Infrastructure\Database\SettingsRepository;
 use CampusDrive\Infrastructure\Storage\UploadStorage;
 
 require_once 'utils/db.php';
@@ -43,6 +44,12 @@ if (isset($_GET['folderId'])) {
     echo json_encode($folder_details);
     exit;
 }
+
+$settingsRepository = new SettingsRepository();
+$announcement = $settingsRepository->getEnabledAnnouncement();
+$announcement_storage_key = $announcement === null
+    ? null
+    : 'campusdrive_announcement_' . $user_id . '_' . hash('sha256', $announcement);
 
 // Upload file handling
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
@@ -128,6 +135,12 @@ if (!$my_pending_files) {
 </nav>
 
 <div class="container">
+    <?php if ($announcement !== null): ?>
+        <div id="announcement" class="alert alert-info alert-dismissible d-none" role="status">
+            <strong><?= t('announcement') ?>:</strong> <?= htmlspecialchars($announcement, ENT_QUOTES, 'UTF-8') ?>
+            <button id="dismissAnnouncement" type="button" class="btn-close" data-bs-dismiss="alert" aria-label="<?= t('close') ?>"></button>
+        </div>
+    <?php endif; ?>
     <?php if ($message): ?><div class="alert alert-success py-2"><?= $message ?></div><?php endif; ?>
     <?php if ($error): ?><div class="alert alert-danger py-2"><?= $error ?></div><?php endif; ?>
     <div class="row">
@@ -210,6 +223,7 @@ if (!$my_pending_files) {
 <script>
     const locale = <?= json_encode(locale()) ?>;
     const folderStorageKey = <?= json_encode('student_current_folder_' . $promo_id, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    const announcementStorageKey = <?= json_encode($announcement_storage_key, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     const labels = <?= json_encode([
         'back' => t('back'),
         'view' => t('view'),
@@ -221,6 +235,16 @@ if (!$my_pending_files) {
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
     }[char]));
+
+    const announcementElement = document.querySelector('#announcement');
+    if (announcementElement && announcementStorageKey) {
+        if (localStorage.getItem(announcementStorageKey) === null) {
+            announcementElement.classList.remove('d-none');
+        }
+        document.querySelector('#dismissAnnouncement').addEventListener('click', () => {
+            localStorage.setItem(announcementStorageKey, '1');
+        });
+    }
 
     function openFolder(folderId) {
         sessionStorage.setItem(folderStorageKey, folderId === null || folderId === undefined ? 'null' : folderId);

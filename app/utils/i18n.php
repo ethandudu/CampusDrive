@@ -111,6 +111,8 @@ function translations(): array
             'maintenance_message' => 'CampusDrive est temporairement indisponible pour cause de maintenance. Nous serons de retour très bientôt.',
             'maintenance_retry' => 'Merci de réessayer dans quelques instants.',
             'remove_student_info' => 'Vous souhaitez retirer un étudiant déjà inscrit ? Envoyez-nous un mail à <a href="mailto:contact@campusdrive.fr">contact@campusdrive.fr</a> en précisant l’adresse e-mail de l’étudiant à retirer.',
+            'announcement' => 'Annonce',
+            'close' => 'Fermer',
         ],
         'en' => [
             'login' => 'Sign in', 'email' => 'Email address', 'password' => 'Password',
@@ -207,6 +209,8 @@ function translations(): array
             'maintenance_message' => 'CampusDrive is temporarily unavailable due to maintenance. We will be back very soon.',
             'maintenance_retry' => 'Please try again in a few moments.',
             'remove_student_info' => 'Do you want to remove a student who is already registered? Send us an email at <a href="mailto:contact@campusdrive.fr">contact@campusdrive.fr</a> specifying the email address of the student to be removed.',
+            'announcement' => 'Announcement',
+            'close' => 'Close',
         ],
     ];
 
