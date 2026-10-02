@@ -194,43 +194,55 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
             </div>
         </div>
         <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white fw-bold"><?= t('sent_invitations') ?></div>
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                    <tr>
-                        <th>Email</th>
-                        <th><?= t('status') ?></th>
-                        <th><?= t('date') ?></th>
-                        <th><?= t('action') ?></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($invitations as $inv): ?>
-                        <tr>
-                            <td><?= htmlspecialchars($inv['email']) ?></td>
-                            <td>
-                                <?php if ($inv['is_used']): ?>
-                                    <span class="badge bg-secondary"><?= t('registered') ?></span>
-                                <?php else: ?>
-                                    <span class="badge bg-warning text-dark"><?= t('pending') ?></span>
+            <div class="accordion mb-4" id="invitationsAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInvitations" aria-expanded="false" aria-controls="collapseInvitations">
+                            <?= t('sent_invitations') ?> (<?= count($invitations) ?>)
+                        </button>
+                    </h2>
+                    <div id="collapseInvitations" class="accordion-collapse collapse">
+                        <div class="accordion-body p-0">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                <tr>
+                                    <th>Email</th>
+                                    <th><?= t('status') ?></th>
+                                    <th><?= t('date') ?></th>
+                                    <th><?= t('action') ?></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($invitations as $inv): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($inv['email']) ?></td>
+                                        <td>
+                                            <?php if ($inv['is_used']): ?>
+                                                <span class="badge bg-secondary"><?= t('registered') ?></span>
+                                            <?php else: ?>
+                                                <span class="badge bg-warning text-dark"><?= t('pending') ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?= date('d/m/Y H:i', strtotime($inv['created_at'])) ?></td>
+                                        <td>
+                                            <form method="POST" class="d-inline">
+                                                <input type="hidden" name="invitation_id" value="<?= $inv['id'] ?>">
+                                                <?php if (!$inv['is_used']): ?>
+                                                    <button type="submit" name="action" value="delete" class="btn btn-sm btn-danger" onclick="return confirm('<?= t('delete_confirmation') ?>');"><?= t('delete') ?></button>
+                                                <?php endif; ?>
+                                                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                <?php if (empty($invitations)): ?>
+                                    <tr><td colspan="4" class="text-center text-muted"><?= t('no_invitations') ?></td></tr>
                                 <?php endif; ?>
-                            </td>
-                            <td><?= date('d/m/Y H:i', strtotime($inv['created_at'])) ?></td>
-                            <td>
-                                <form method="POST" class="d-inline">
-                                    <input type="hidden" name="invitation_id" value="<?= $inv['id'] ?>">
-                                    <button type="submit" name="action" value="delete" class="btn btn-sm btn-danger" onclick="return confirm('<?= t('delete_confirmation') ?>');"><?= t('delete') ?></button>
-                                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                                </form>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                    <?php if(empty($invitations)): ?>
-                        <tr><td colspan="4" class="text-center text-muted"><?= t('no_invitations') ?></td></tr>
-                    <?php endif; ?>
-                    </tbody>
-                </table>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="card shadow-sm mt-4">
                 <div class="card-header bg-white fw-bold"><?= t('files_pending') ?></div>
