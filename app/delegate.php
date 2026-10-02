@@ -240,6 +240,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                                 <?php endif; ?>
                                 </tbody>
                             </table>
+                            <small class="text-muted d-block p-2"><?= t('remove_student_info') ?></small>
                         </div>
                     </div>
                 </div>
