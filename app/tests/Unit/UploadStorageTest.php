@@ -52,7 +52,7 @@ final class UploadStorageTest extends TestCase
 
     public function testGeneratedNamesAreRandomAndKeepTheExtension(): void
     {
-        $storage = new UploadStorage($this->private, $this->legacy);
+        $storage = new UploadStorage($this->private);
 
         $first = $storage->generateName('pdf');
         $second = $storage->generateName('pdf');
@@ -63,7 +63,7 @@ final class UploadStorageTest extends TestCase
 
     public function testPrepareDirectoryCreatesAPrivateDirectory(): void
     {
-        $storage = new UploadStorage($this->private, $this->legacy);
+        $storage = new UploadStorage($this->private);
 
         $this->assertTrue($storage->prepareDirectory());
         $this->assertDirectoryExists($this->private);
@@ -74,7 +74,7 @@ final class UploadStorageTest extends TestCase
 
     public function testPathForStripsDirectoryComponents(): void
     {
-        $storage = new UploadStorage($this->private, $this->legacy);
+        $storage = new UploadStorage($this->private);
 
         $this->assertSame(
             $this->private . DIRECTORY_SEPARATOR . 'passwd',
@@ -82,21 +82,7 @@ final class UploadStorageTest extends TestCase
         );
     }
 
-    public function testFindLooksInThePrivateDirectoryThenInTheLegacyOne(): void
-    {
-        $storage = new UploadStorage($this->private, $this->legacy);
-        $storage->prepareDirectory();
-        file_put_contents($this->private . '/new.pdf', 'new');
-        file_put_contents($this->legacy . '/old.pdf', 'old');
 
-        file_put_contents($this->root . '/secret.txt', 'secret');
-
-        $this->assertSame($this->private . DIRECTORY_SEPARATOR . 'new.pdf', $storage->find('new.pdf'));
-        $this->assertSame($this->legacy . DIRECTORY_SEPARATOR . 'old.pdf', $storage->find('old.pdf'));
-        $this->assertNull($storage->find('missing.pdf'));
-        $this->assertNull($storage->find('../secret.txt'));
-        unlink($this->root . '/secret.txt');
-    }
 
     public function testDeleteRemovesTheFileFromBothDirectories(): void
     {
