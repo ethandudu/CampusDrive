@@ -113,6 +113,10 @@ function translations(): array
             'remove_student_info' => 'Vous souhaitez retirer un étudiant déjà inscrit ? Envoyez-nous un mail à <a href="mailto:contact@campusdrive.fr">contact@campusdrive.fr</a> en précisant l’adresse e-mail de l’étudiant à retirer.',
             'announcement' => 'Annonce',
             'close' => 'Fermer',
+            'registration_waiting_confirmation' => 'Inscription réussie ! Vérifiez votre e-mail pour un lien de confirmation afin d’activer votre compte.',
+            'account_not_activated' => 'Votre compte n’est pas encore activé. Veuillez vérifier votre boîte e-mail pour le lien d’activation.',
+            'account_activated' => 'Votre compte a été activé avec succès ! Vous pouvez maintenant vous connecter.',
+            'activation_failed' => 'Échec de l’activation du compte. Le lien est peut-être invalide ou expiré.',
         ],
         'en' => [
             'login' => 'Sign in', 'email' => 'Email address', 'password' => 'Password',
@@ -211,6 +215,10 @@ function translations(): array
             'remove_student_info' => 'Do you want to remove a student who is already registered? Send us an email at <a href="mailto:contact@campusdrive.fr">contact@campusdrive.fr</a> specifying the email address of the student to be removed.',
             'announcement' => 'Announcement',
             'close' => 'Close',
+            'registration_waiting_confirmation' => 'Registration complete! Check your email for a confirmation link to activate your account.',
+            'account_not_activated' => 'Your account is not yet activated. Please check your email inbox for the activation link.',
+            'account_activated' => 'Your account has been successfully activated! You can now sign in.',
+            'activation_failed' => 'Account activation failed. The link may be invalid or expired.',
         ],
     ];
 

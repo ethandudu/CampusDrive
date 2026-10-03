@@ -6,7 +6,7 @@ use InvalidArgumentException;
 
 final class UserRepository extends DatabaseRepository
 {
-    public function createUser(string $email, string $password, ?string $promotion_id, string $role): bool
+    public function createUser(string $email, string $password, ?string $promotion_id, string $role): array
     {
         if (!InputSanitizer::isValidEmail($email)) {
             throw new InvalidArgumentException("Adresse email invalide.");
@@ -19,13 +19,20 @@ final class UserRepository extends DatabaseRepository
             throw new InvalidArgumentException('Invalid role.');
         }
 
-        $stmt = $this->connection()->prepare("INSERT INTO users (email, password, role, promotion_id) VALUES (?, ?, ?, ?)");
-        return $stmt->execute([
+        if ($role === 'delegate') {
+            $activationToken = bin2hex(random_bytes(16));
+        } else {
+            $activationToken = null;
+        }
+
+        $stmt = $this->connection()->prepare("INSERT INTO users (email, password, role, promotion_id, activation_token) VALUES (?, ?, ?, ?, ?)");
+        return [$stmt->execute([
             InputSanitizer::sanitize($email),
             $password,
             InputSanitizer::sanitize($role),
-            InputSanitizer::sanitize($promotion_id)
-        ]);
+            InputSanitizer::sanitize($promotion_id),
+            $activationToken ?? null
+        ]), $activationToken];
     }
 
     public function deleteUser(string $user_id): bool
@@ -63,6 +70,12 @@ final class UserRepository extends DatabaseRepository
         return $stmt->execute([$language, $userId]);
     }
 
+    public function activateUser(string $activationToken): bool
+    {
+        $stmt = $this->connection()->prepare("UPDATE users SET activation_token = NULL WHERE activation_token = ?");
+        return $stmt->execute([InputSanitizer::sanitize($activationToken)]);
+    }
+
     public function loginUser(string $email, string $password): ?array
     {
         $stmt = $this->connection()->prepare("SELECT * FROM users WHERE email = ?");
@@ -74,7 +87,13 @@ final class UserRepository extends DatabaseRepository
         }
 
         if (password_verify($password, $user['password'])) {
-            return $user;
+            if ($user['activation_token'] !== null) {
+                return [
+                    'user' => null,
+                    'error' => 'account_not_activated'
+                ];
+            }
+            return [$user];
         }
 
         if ($this->matchesLegacyEncodedPassword($password, $user['password'])) {
@@ -82,7 +101,12 @@ final class UserRepository extends DatabaseRepository
             $user['password'] = password_hash($password, PASSWORD_DEFAULT);
             $this->storePasswordHash((string) $user['id'], $user['password']);
 
-            return $user;
+            if ($user['activation_token'] !== null) {
+                return [
+                    'error' => 'account_not_activated'
+                ];
+            }
+            return [$user];
         }
 
         return null;

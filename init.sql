@@ -5,6 +5,8 @@ CREATE TABLE users (
     role ENUM('admin', 'delegate', 'student') NOT NULL DEFAULT 'student',
     language VARCHAR(5) NOT NULL DEFAULT 'fr',
     promotion_id UUID DEFAULT NULL,
+    activation_token VARCHAR(64) UNIQUE DEFAULT NULL,
+    totp VARCHAR(32) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

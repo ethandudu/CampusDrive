@@ -17,6 +17,7 @@ require_once 'dCaptcha/captcha.php';
 require_once 'utils/mail.php';
 require_once 'utils/config.php';
 require_once 'utils/emailTemplates/welcome.php';
+require_once 'utils/emailTemplates/activate_account.php';
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -90,11 +91,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($token && is_array($invitation)) {
                 $role = $invitation['role'] ?? 'student';
             }
-            if ($userRepository->createUser($email, $password, $promo_id, $role)) {
-                $invitationRepository->markInvitationAsUsed($token);
-                $welcomeEmail = welcomeEmailTemplate($email);
-                (new Mailer)->sendMail($email, $welcomeEmail['subject'], $welcomeEmail['body']);
-                header("Location: login.php?registered=1");
+            $user = $userRepository->createUser($email, $password, $promo_id, $role);
+            if ($user[0] == 1) {
+                if ($role === 'student') {
+                    $invitationRepository->markInvitationAsUsed($token);
+                    $welcomeEmail = welcomeEmailTemplate($email);
+                    (new Mailer)->sendMail($email, $welcomeEmail['subject'], $welcomeEmail['body']);
+                    header("Location: login.php?registered=1");
+                } else {
+                    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                    $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']);
+                    $activationLink = $baseUrl . '/activate.php?token=' . urlencode($user[1]);
+                    $activationEmail = activateAccountEmailTemplate($email, $activationLink);
+                    (new Mailer)->sendMail($email, $activationEmail['subject'], $activationEmail['body']);
+                    header("Location: login.php?registered=2");
+                }
                 exit;
             }
         } catch (\InvalidArgumentException $e) {

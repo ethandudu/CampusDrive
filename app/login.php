@@ -15,12 +15,28 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-if (isset($_GET['registered'])){
+if (isset($_GET['registered']) && $_GET['registered'] === '1') {
     $message = t('registration_success');
+}
+
+if (isset($_GET['registered']) && $_GET['registered'] === '2') {
+    $message = t('registration_waiting_confirmation');
 }
 
 if (isset($_GET['locked'])) {
     $error = t('too_many_attempts');
+}
+
+if (isset($_GET['account_not_activated'])) {
+    $error = t('account_not_activated');
+}
+
+if (isset($_GET['activated'])) {
+    if ($_GET['activated'] === '1') {
+        $message = t('account_activated');
+    } else {
+        $error = t('activation_failed');
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -40,6 +56,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user = $userRepository->loginUser($_POST['email'], $_POST['password']);
 
     if ($user !== null) {
+        if (isset($user['error'])) {
+            header('Location: login.php?'.http_build_query([$user['error']]));
+            exit;
+        }
+
+        $user = $user[0];
         startAuthenticatedSession($user);
         $_SESSION['locale'] = in_array($user['language'] ?? null, array_keys(SUPPORTED_LOCALES), true)
             ? $user['language']
