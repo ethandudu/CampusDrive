@@ -74,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Handle invitation generation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
+    $_POST['invite_email'] = strtolower(trim($_POST['invite_email']));
     //check if the email is in the allowed domains
     $email_domain = substr(strrchr($_POST['invite_email'], "@"), 1);
     if (!in_array($email_domain, UNIVERSITY_EMAIL_DOMAINS)) {
@@ -93,7 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
     $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']);
     $registerLink = $baseUrl . '/register.php?token=' . urlencode($token);
     $invitationEmail = invitationEmailTemplate($promotionForInvite['name'] ?? '', $registerLink);
-    (new Mailer())->sendMail($_POST['invite_email'], $invitationEmail['subject'], $invitationEmail['body']);
+    new Mailer()->sendMail($_POST['invite_email'], $invitationEmail['subject'], $invitationEmail['body']);
+    header('Location: delegate.php?success=invitation_sent');
 }
 
 // Create new folder

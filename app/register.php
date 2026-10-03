@@ -114,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($role === 'student') {
                     $invitationRepository->markInvitationAsUsed($token);
                     $welcomeEmail = welcomeEmailTemplate($email);
-                    (new Mailer)->sendMail($email, $welcomeEmail['subject'], $welcomeEmail['body']);
+                    (new Mailer)->sendMail(strtolower($email), $welcomeEmail['subject'], $welcomeEmail['body']);
                     header("Location: login.php?registered=1");
                 } else {
                     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
