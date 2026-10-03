@@ -79,7 +79,7 @@ function translations(): array
             'promotion_request_date' => 'Date de demande', 'promotion_activated' => 'L’espace de promotion a été activé et l’étudiant demandeur a été nommé délégué.',
             'security_error' => 'Erreur de sécurité : jeton CSRF invalide.',
             'student' => 'Étudiant', 'delegate' => 'Délégué', 'admin' => 'Administrateur',
-            'invalid_email_domain' => 'Domaine e-mail invalide. Veuillez utiliser un e-mail d’une université autorisée. Si vous pensez que c’est une erreur, contactez nous ici : <a href="/contact.php">Contact</a>.',
+            'invalid_email_domain' => 'Domaine e-mail invalide. Veuillez utiliser un e-mail d’une université autorisée. Si vous pensez que c’est une erreur, contactez nous : contact@campusdrive.fr',
             'email_already_invited' => 'Cette adresse e-mail a déjà été invitée.',
             'register_message' => 'Ne créez un compte que si vous souhaitez être responsable de la promotion. Sinon, attendez que le délégué vous invite et utilisez le lien d’invitation.',
             'password_mismatch' => 'Le mot de passe et sa confirmation ne correspondent pas.',
@@ -118,6 +118,7 @@ function translations(): array
             'account_activated' => 'Votre compte a été activé avec succès ! Vous pouvez maintenant vous connecter.',
             'activation_failed' => 'Échec de l’activation du compte. Le lien est peut-être invalide ou expiré.',
             'accept_terms' => 'J’accepte les <a href="/cgu.php" target="_blank">conditions générales d’utilisation</a>.',
+            'unknown_error' => 'Une erreur inconnue est survenue. Veuillez réessayer plus tard.',
         ],
         'en' => [
             'login' => 'Sign in', 'email' => 'Email address', 'password' => 'Password',
@@ -180,7 +181,7 @@ function translations(): array
             'promotion_request_date' => 'Request date', 'promotion_activated' => 'The promotion workspace has been activated and the requesting student has been made a delegate.',
             'security_error' => 'Security error: invalid CSRF token.',
             'student' => 'Student', 'delegate' => 'Delegate', 'admin' => 'Administrator',
-            'invalid_email_domain' => 'Invalid email domain. Please use a university email. If you think this is an error, contact us here: <a href="/contact.php">Contact</a>.',
+            'invalid_email_domain' => 'Invalid email domain. Please use a university email. If you think this is an error, contact us at contact@campusdrive.fr.',
             'email_already_invited' => 'This email address has already been invited.',
             'register_message' => 'Only create an account if you want to be responsible for the promotion. Otherwise, wait for the delegate to invite you and use the invitation link.',
             'current_password' => 'Current password',
@@ -221,6 +222,7 @@ function translations(): array
             'account_activated' => 'Your account has been successfully activated! You can now sign in.',
             'activation_failed' => 'Account activation failed. The link may be invalid or expired.',
             'accept_terms' => 'I accept the <a href="/cgu.php" target="_blank">terms and conditions</a>.',
+            'unknown_error' => 'An unknown error occurred. Please try again later.',
         ],
     ];
 

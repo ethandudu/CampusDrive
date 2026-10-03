@@ -38,6 +38,17 @@ $invited_email = '';
 $promo_id = null;
 $role = 'delegate';
 
+if (isset($_GET['error'])) {
+    switch ($_GET['error']) {
+        case 'invalid_email_domain':
+            $error = t('invalid_email_domain');
+            break;
+        default:
+            $error = t('unknown_error');
+            break;
+    }
+}
+
 if ($token) {
     $invitation = $invitationRepository->getInvitationByToken($token);
 
@@ -61,6 +72,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['locale'] = $newLocale;
         }
         header('Location: register.php' . ($token ? '?token=' . urlencode($token) : ''));
+        exit;
+    }
+
+    //check if the email is in the allowed domains
+    $email_domain = substr(strrchr($_POST['email'], "@"), 1);
+    if (!in_array($email_domain, UNIVERSITY_EMAIL_DOMAINS)) {
+        header('Location: register.php?error=invalid_email_domain');
         exit;
     }
 
