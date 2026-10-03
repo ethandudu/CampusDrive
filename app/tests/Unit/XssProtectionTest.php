@@ -18,6 +18,13 @@ final class XssProtectionTest extends TestCase
         $this->assertStringContainsString('&lt;img src=x onerror=alert(1)&gt;', $body);
     }
 
+    public function testEmailLayoutIncludesTheEmbeddedCampusDriveLogoAtTheTop(): void
+    {
+        $body = welcomeEmailTemplate('student@example.com')['body'];
+
+        $this->assertStringContainsString('<img src="cid:campusdrive-logo" alt="CampusDrive"', $body);
+    }
+
     public function testDelegatePageOnlyTranslatesWhitelistedQueryParameters(): void
     {
         $contents = file_get_contents(__DIR__ . '/../../delegate.php');
