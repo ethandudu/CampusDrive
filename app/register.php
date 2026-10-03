@@ -193,6 +193,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <input type="text" class="form-control" name="captcha" required placeholder="<?= t('captcha_placeholder') ?>">
                         </div>
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    <?= t('accept_terms') ?>
+                                </label>
+                            </div>
+                        </div>
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                         <input type="hidden" name="action" value="register">
                         <button type="submit" class="btn btn-primary w-100" disabled><?= t('sign_up') ?></button>

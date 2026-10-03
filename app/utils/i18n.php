@@ -117,6 +117,7 @@ function translations(): array
             'account_not_activated' => 'Votre compte n’est pas encore activé. Veuillez vérifier votre boîte e-mail pour le lien d’activation.',
             'account_activated' => 'Votre compte a été activé avec succès ! Vous pouvez maintenant vous connecter.',
             'activation_failed' => 'Échec de l’activation du compte. Le lien est peut-être invalide ou expiré.',
+            'accept_terms' => 'J’accepte les <a href="/cgu.php" target="_blank">conditions générales d’utilisation</a>.',
         ],
         'en' => [
             'login' => 'Sign in', 'email' => 'Email address', 'password' => 'Password',
@@ -219,6 +220,7 @@ function translations(): array
             'account_not_activated' => 'Your account is not yet activated. Please check your email inbox for the activation link.',
             'account_activated' => 'Your account has been successfully activated! You can now sign in.',
             'activation_failed' => 'Account activation failed. The link may be invalid or expired.',
+            'accept_terms' => 'I accept the <a href="/cgu.php" target="_blank">terms and conditions</a>.',
         ],
     ];
 
