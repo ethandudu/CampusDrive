@@ -119,7 +119,9 @@ function translations(): array
             'activation_failed' => 'Échec de l’activation du compte. Le lien est peut-être invalide ou expiré.',
             'accept_terms' => 'J’accepte les <a href="/cgu.php" target="_blank">conditions générales d’utilisation</a>.',
             'unknown_error' => 'Une erreur inconnue est survenue. Veuillez réessayer plus tard.',
-            'invitation_sent' => 'Invitation envoyée avec succès.'
+            'invitation_sent' => 'Invitation envoyée avec succès.',
+            'announcement_text' => "Message de l'annonce : ",
+            'announcement_enabled' => 'Annonce activée',
         ],
         'en' => [
             'login' => 'Sign in', 'email' => 'Email address', 'password' => 'Password',
@@ -224,7 +226,9 @@ function translations(): array
             'activation_failed' => 'Account activation failed. The link may be invalid or expired.',
             'accept_terms' => 'I accept the <a href="/cgu.php" target="_blank">terms and conditions</a>.',
             'unknown_error' => 'An unknown error occurred. Please try again later.',
-            'invitation_sent' => 'Invitation sent successfully.'
+            'invitation_sent' => 'Invitation sent successfully.',
+            'announcement_text' => "Announcement message: ",
+            'announcement_enabled' => 'Announcement enabled',
         ],
     ];
 

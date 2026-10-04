@@ -121,6 +121,13 @@ final class DatabaseIntegrationTest extends TestCase
 
         $details = $this->promotions->getPromotionDetails($promotionId);
         $this->assertSame('Integration Test Promotion', $details['name']);
+
+        $this->assertTrue($this->promotions->updateAnnouncement($promotionId, 'Important update', false));
+        $this->assertSame(0, (int) $this->promotions->getAnnouncementDetails($promotionId)['announcement_enabled']);
+        $this->assertNull($this->promotions->getEnabledAnnouncement($promotionId));
+
+        $this->assertTrue($this->promotions->updateAnnouncement($promotionId, 'Important update', true));
+        $this->assertSame('Important update', $this->promotions->getEnabledAnnouncement($promotionId));
     }
 
     public function testFolderCreationAndListing(): void

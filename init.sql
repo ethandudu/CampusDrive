@@ -14,6 +14,8 @@ CREATE TABLE promotions (
     id UUID PRIMARY KEY DEFAULT (UUID()),
     name VARCHAR(255) NOT NULL,
     status ENUM('pending', 'active') DEFAULT 'pending',
+    announcement_text TEXT DEFAULT NULL,
+    announcement_enabled BOOLEAN DEFAULT FALSE,
     created_by UUID DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL

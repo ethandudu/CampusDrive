@@ -37,6 +37,9 @@ BEGIN
             ALTER TABLE users
                 ADD COLUMN IF NOT EXISTS activation_token VARCHAR(255) DEFAULT NULL AFTER password,
                 ADD COLUMN IF NOT EXISTS totp VARCHAR(32) DEFAULT NULL AFTER activation_token;
+            ALTER TABLE promotions
+                ADD COLUMN IF NOT EXISTS announcement_text TEXT DEFAULT NULL,
+                ADD COLUMN IF NOT EXISTS announcement_enabled BOOLEAN DEFAULT FALSE;
         END IF;
     END IF;
 END//

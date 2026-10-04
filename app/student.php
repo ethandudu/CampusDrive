@@ -45,11 +45,17 @@ if (isset($_GET['folderId'])) {
     exit;
 }
 
+
 $settingsRepository = new SettingsRepository();
-$announcement = $settingsRepository->getEnabledAnnouncement();
-$announcement_storage_key = $announcement === null
+$adminAnnouncement = $settingsRepository->getEnabledAnnouncement();
+$announcement_storage_key = $adminAnnouncement === null
     ? null
-    : 'campusdrive_announcement_' . $user_id . '_' . hash('sha256', $announcement);
+    : 'campusdrive_announcement_' . $user_id . '_' . hash('sha256', $adminAnnouncement);
+
+$studentAnnouncement = $promotionRepository->getEnabledAnnouncement($promo_id);
+$studentAnnouncement_storage_key = $studentAnnouncement === null
+    ? null
+    : 'campusdrive_student_announcement_' . $user_id . '_' . hash('sha256', $studentAnnouncement);
 
 // Upload file handling
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
@@ -135,10 +141,16 @@ if (!$my_pending_files) {
 </nav>
 
 <div class="container">
-    <?php if ($announcement !== null): ?>
+    <?php if ($adminAnnouncement !== null): ?>
         <div id="announcement" class="alert alert-info alert-dismissible d-none" role="status">
-            <strong><?= t('announcement') ?>:</strong> <?= htmlspecialchars($announcement, ENT_QUOTES, 'UTF-8') ?>
+            <strong><?= t('announcement') ?>:</strong> <?= htmlspecialchars($adminAnnouncement, ENT_QUOTES, 'UTF-8') ?>
             <button id="dismissAnnouncement" type="button" class="btn-close" data-bs-dismiss="alert" aria-label="<?= t('close') ?>"></button>
+        </div>
+    <?php endif; ?>
+    <?php if ($studentAnnouncement !== null): ?>
+        <div id="studentAnnouncement" class="alert alert-info alert-dismissible d-none" role="status">
+            <strong><?= t('announcement') ?>:</strong> <?= htmlspecialchars($studentAnnouncement, ENT_QUOTES, 'UTF-8') ?>
+            <button id="dismissStudentAnnouncement" type="button" class="btn-close" data-bs-dismiss="alert" aria-label="<?= t('close') ?>"></button>
         </div>
     <?php endif; ?>
     <?php if ($message): ?><div class="alert alert-success py-2"><?= $message ?></div><?php endif; ?>
@@ -224,6 +236,7 @@ if (!$my_pending_files) {
     const locale = <?= json_encode(locale()) ?>;
     const folderStorageKey = <?= json_encode('student_current_folder_' . $promo_id, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     const announcementStorageKey = <?= json_encode($announcement_storage_key, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    const studentAnnouncementStorageKey = <?= json_encode($studentAnnouncement_storage_key, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     const labels = <?= json_encode([
         'back' => t('back'),
         'view' => t('view'),
@@ -237,6 +250,15 @@ if (!$my_pending_files) {
     }[char]));
 
     const announcementElement = document.querySelector('#announcement');
+    const studentAnnouncementElement = document.querySelector('#studentAnnouncement');
+    if (studentAnnouncementElement && studentAnnouncementStorageKey) {
+        if (localStorage.getItem(studentAnnouncementStorageKey) === null) {
+            studentAnnouncementElement.classList.remove('d-none');
+        }
+        document.querySelector('#dismissStudentAnnouncement').addEventListener('click', () => {
+            localStorage.setItem(studentAnnouncementStorageKey, '1');
+        });
+    }
     if (announcementElement && announcementStorageKey) {
         if (localStorage.getItem(announcementStorageKey) === null) {
             announcementElement.classList.remove('d-none');

@@ -64,6 +64,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Handle announcement update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['announcement_text'])) {
+    $announcement_text = trim($_POST['announcement_text']);
+    $announcement_enabled = isset($_POST['announcement_enabled']) && $_POST['announcement_enabled'] === '1';
+    $stmt = $promotionRepository->updateAnnouncement($_SESSION['promotion_id'], $announcement_text, $announcement_enabled);
+}
+
 // Handle invitation deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['invitation_id'])) {
     $invitation_id = htmlspecialchars($_POST['invitation_id']);
@@ -288,6 +295,36 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                                     </tbody>
                                 </table>
                             <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion mt-4" id="announcementAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAnnouncement" aria-expanded="false" aria-controls="collapseAnnouncement">
+                            <?= t('announcement') ?>
+                        </button>
+                    </h2>
+                    <div id="collapseAnnouncement" class="accordion-collapse collapse">
+                        <div class="accordion-body p-0">
+                            <?php
+                            $announcement = $promotionRepository->getAnnouncementDetails($_SESSION['promotion_id']);
+                            ?>
+
+                            <form method="post">
+                                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                <div class="mb-3">
+                                    <label for="announcementText" class="form-label"><?= t('announcement_text') ?></label>
+                                    <textarea class="form-control" id="announcementText" name="announcement_text" rows="3"><?= htmlspecialchars($announcement['announcement_text'] ?? '') ?></textarea>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input type="hidden" name="announcement_enabled" value="0">
+                                    <input class="form-check-input" type="checkbox" id="announcementEnabled" name="announcement_enabled" value="1" <?= !empty($announcement['announcement_enabled']) ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="announcementEnabled"><?= t('announcement_enabled') ?></label>
+                                </div>
+                                <button type="submit" class="btn btn-success"><?= t('save') ?></button>
+                            </form>
                         </div>
                     </div>
                 </div>

@@ -56,4 +56,43 @@ final class PromotionRepository extends DatabaseRepository
         $stmt = $this->connection()->query("SELECT COUNT(*) FROM promotions");
         return (int) $stmt->fetchColumn();
     }
+
+    public function getEnabledAnnouncement(string $promotion_id): ?string
+    {
+        $stmt = $this->connection()->prepare(
+            "SELECT announcement_text, announcement_enabled FROM promotions WHERE id = ?"
+        );
+        $stmt->execute([$promotion_id]);
+        $announcement = $stmt->fetch();
+        if (!$announcement) {
+            return null;
+        }
+
+        $text = trim($announcement['announcement_text'] ?? '');
+        if (empty($announcement['announcement_enabled']) || $text === '') {
+            return null;
+        }
+
+        return $text;
+    }
+
+    public function getAnnouncementDetails(string $promotion_id): ?array
+    {
+        $stmt = $this->connection()->prepare(
+            "SELECT announcement_text, announcement_enabled FROM promotions WHERE id = ?"
+        );
+        $stmt->execute([$promotion_id]);
+        return $stmt->fetch() ?: null;
+    }
+
+    public function updateAnnouncement(string $promotion_id, string $announcement_text, bool $announcement_enabled): bool
+    {
+        $stmt = $this->connection()->prepare(
+            "UPDATE promotions SET announcement_text = ?, announcement_enabled = ? WHERE id = ?"
+        );
+        $stmt->bindValue(1, InputSanitizer::sanitize($announcement_text), \PDO::PARAM_STR);
+        $stmt->bindValue(2, $announcement_enabled ? 1 : 0, \PDO::PARAM_INT);
+        $stmt->bindValue(3, InputSanitizer::sanitize($promotion_id), \PDO::PARAM_STR);
+        return $stmt->execute();
+    }
 }
