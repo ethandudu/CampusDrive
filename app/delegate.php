@@ -97,9 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
 
     $invitationRepository->createInvitation($_POST['invite_email'], $_SESSION['promotion_id'], $token);
     $promotionForInvite = $promotionRepository->getPromotionDetails($_SESSION['promotion_id']);
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']);
-    $registerLink = $baseUrl . '/register.php?token=' . urlencode($token);
+    $registerLink = rtrim(APP_BASE_URL, '/') . '/register.php?token=' . urlencode($token);
     $invitationEmail = invitationEmailTemplate($promotionForInvite['name'] ?? '', $registerLink);
     new Mailer()->sendMail($_POST['invite_email'], $invitationEmail['subject'], $invitationEmail['body']);
     header('Location: delegate.php?success=invitation_sent');

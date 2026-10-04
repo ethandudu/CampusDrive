@@ -29,6 +29,7 @@ services:
       MYSQL_DATABASE: campusdrive
       MYSQL_USER: campususer
       MYSQL_PASSWORD: campuspassword
+      APP_BASE_URL: https://campusdrive.fr
     restart: unless-stopped
     networks:
         - campusdrive_network

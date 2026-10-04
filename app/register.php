@@ -114,9 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     (new Mailer)->sendMail(strtolower($email), $welcomeEmail['subject'], $welcomeEmail['body']);
                     header("Location: login.php?registered=1");
                 } else {
-                    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-                    $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']);
-                    $activationLink = $baseUrl . '/activate.php?token=' . urlencode($user[1]);
+                    $activationLink = rtrim(APP_BASE_URL, '/') . '/activate.php?token=' . urlencode($user[1]);
                     $activationEmail = activateAccountEmailTemplate($email, $activationLink);
                     (new Mailer)->sendMail($email, $activationEmail['subject'], $activationEmail['body']);
                     header("Location: login.php?registered=2");

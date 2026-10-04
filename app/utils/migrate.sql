@@ -48,3 +48,12 @@ DELIMITER ;
 
 CALL campusdrive_migrate_to_1_0();
 DROP PROCEDURE campusdrive_migrate_to_1_0;
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    token_hash CHAR(64) PRIMARY KEY,
+    user_id UUID NOT NULL,
+    expires_at BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_password_reset_tokens_user_id (user_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

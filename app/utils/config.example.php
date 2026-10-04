@@ -12,6 +12,7 @@ define('MAIL_USERNAME', 'noreply@campusdrive.fr');
 define('MAIL_PASSWORD', 'CampusPassword');
 define('MAIL_FROM', 'noreply@campusdrive.fr');
 define('MAIL_FROM_NAME', 'CampusDrive');
+define('APP_BASE_URL', getenv('APP_BASE_URL') ?: 'https://campusdrive.fr');
 
 // Utils
 define('UNIVERSITY_EMAIL_DOMAINS', []);

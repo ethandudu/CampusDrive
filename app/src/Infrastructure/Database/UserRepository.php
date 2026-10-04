@@ -132,6 +132,73 @@ final class UserRepository extends DatabaseRepository
         return $this->storePasswordHash($userId, password_hash($newPassword, PASSWORD_DEFAULT));
     }
 
+    public function createPasswordResetToken(string $email, string $tokenHash, int $expiresAt): ?string
+    {
+        $stmt = $this->connection()->prepare('SELECT id, email FROM users WHERE email = ?');
+        $stmt->execute([InputSanitizer::sanitize($email)]);
+        $user = $stmt->fetch();
+
+        if (!$user) {
+            return null;
+        }
+
+        $this->connection()->beginTransaction();
+        try {
+            $delete = $this->connection()->prepare('DELETE FROM password_reset_tokens WHERE user_id = ?');
+            $delete->execute([$user['id']]);
+
+            $insert = $this->connection()->prepare(
+                'INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?)'
+            );
+            $insert->execute([$tokenHash, $user['id'], $expiresAt]);
+            $this->connection()->commit();
+        } catch (\Throwable $e) {
+            $this->connection()->rollBack();
+            throw $e;
+        }
+
+        return (string) $user['email'];
+    }
+
+    public function resetPasswordWithToken(string $tokenHash, string $newPassword): bool
+    {
+        $connection = $this->connection();
+        $connection->beginTransaction();
+
+        try {
+            $stmt = $connection->prepare(
+                'SELECT user_id FROM password_reset_tokens WHERE token_hash = ? AND expires_at > ?'
+            );
+            $stmt->execute([$tokenHash, time()]);
+            $userId = $stmt->fetchColumn();
+
+            if ($userId === false) {
+                $connection->rollBack();
+                return false;
+            }
+
+            $claim = $connection->prepare(
+                'DELETE FROM password_reset_tokens WHERE token_hash = ? AND expires_at > ?'
+            );
+            $claim->execute([$tokenHash, time()]);
+
+            if ($claim->rowCount() !== 1) {
+                $connection->rollBack();
+                return false;
+            }
+
+            $this->storePasswordHash((string) $userId, password_hash($newPassword, PASSWORD_DEFAULT));
+            $deleteOthers = $connection->prepare('DELETE FROM password_reset_tokens WHERE user_id = ?');
+            $deleteOthers->execute([$userId]);
+            $connection->commit();
+
+            return true;
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+            throw $e;
+        }
+    }
+
     /**
      * Re-hashes the current password with a fresh salt. The stored hash changes, which ends every
      * session opened before (see SessionPolicy::fingerprint) without the user changing their password.

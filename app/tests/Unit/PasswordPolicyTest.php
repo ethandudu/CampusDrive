@@ -51,7 +51,7 @@ final class PasswordPolicyTest extends TestCase
     {
         $root = dirname(__DIR__, 2);
 
-        foreach (['register.php', 'settings.php'] as $file) {
+        foreach (['register.php', 'settings.php', 'reset_password.php'] as $file) {
             $this->assertStringContainsString(
                 'PasswordPolicy::violation(',
                 (string) file_get_contents($root . '/' . $file),

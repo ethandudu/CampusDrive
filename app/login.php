@@ -126,9 +126,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label for="password" class="form-label"><?= t('password') ?></label>
                             <input type="password" class="form-control" id="password" name="password" required>
                         </div>
-                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="action" value="login">
                         <button type="submit" class="btn btn-primary w-100"><?= t('sign_in') ?></button>
+                        <button type="submit" class="btn btn-outline-secondary w-100 mt-2"
+                                formaction="forgot_password.php" formmethod="post" formnovalidate>
+                            <?= t('request_password_reset') ?>
+                        </button>
                     </form>
                     <div class="mt-3 text-center">
                         <a href="register.php" class="text-decoration-none"><?= t('create_account') ?></a>

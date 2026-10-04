@@ -33,6 +33,7 @@ define('MAIL_USERNAME', 'test@example.com');
 define('MAIL_PASSWORD', 'test');
 define('MAIL_FROM', 'test@example.com');
 define('MAIL_FROM_NAME', 'CampusDrive Test');
+define('APP_BASE_URL', 'http://localhost');
 
 define('UNIVERSITY_EMAIL_DOMAINS', ['example.com']);
 
