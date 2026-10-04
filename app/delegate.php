@@ -26,7 +26,7 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-if ($promotionRepository->getPromotionStatus($_SESSION['promotion_id']) == 'pending') {
+if ($promotionRepository->getPromotionStatus($_SESSION['promotion_id']) == ('pending' || null)) {
     header('Location: settings.php?error=promotion_inactive');
     exit;
 }

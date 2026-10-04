@@ -30,7 +30,7 @@ final class PromotionRepository extends DatabaseRepository
         return $stmt->execute([InputSanitizer::sanitize($promotion_id), $user_id]);
     }
 
-    public function getPromotionStatus(string $promotion_id): ?string
+    public function getPromotionStatus(?string $promotion_id): ?string
     {
         $stmt = $this->connection()->prepare("SELECT status FROM promotions WHERE id = ?");
         $stmt->execute([InputSanitizer::sanitize($promotion_id)]);
