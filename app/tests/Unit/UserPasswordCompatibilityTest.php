@@ -67,7 +67,7 @@ final class UserPasswordCompatibilityTest extends TestCase
         $stored = $this->storedHash('legacy');
         $this->assertNotSame($legacyHash, $stored);
         $this->assertTrue(password_verify(self::SPECIAL_PASSWORD, $stored));
-        $this->assertSame($stored, $user['password']);
+        $this->assertSame($stored, $user[0]['password']);
     }
 
     public function testMigratedLoginKeepsTheSessionFingerprintValid(): void
@@ -75,7 +75,7 @@ final class UserPasswordCompatibilityTest extends TestCase
         $this->insertUser('legacy', password_hash(InputSanitizer::sanitize(self::SPECIAL_PASSWORD), PASSWORD_DEFAULT));
 
         $user = $this->users->loginUser('legacy@example.com', self::SPECIAL_PASSWORD);
-        $session = ['auth_fingerprint' => SessionPolicy::fingerprint($user['password'])];
+        $session = ['auth_fingerprint' => SessionPolicy::fingerprint($user[0]['password'])];
 
         $this->assertTrue(SessionPolicy::matchesUser($session, $this->users->getSessionState('legacy')));
     }

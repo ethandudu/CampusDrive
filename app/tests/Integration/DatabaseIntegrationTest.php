@@ -45,12 +45,12 @@ final class DatabaseIntegrationTest extends TestCase
         $email = 'integration_' . bin2hex(random_bytes(4)) . '@example.com';
         $password = password_hash('Secret123!', PASSWORD_DEFAULT);
 
-        $this->assertTrue($this->users->createUser($email, $password, null, 'student'));
+        $this->assertTrue($this->users->createUser($email, $password, null, 'student')[0]);
 
         $user = $this->users->loginUser($email, 'Secret123!');
         $this->assertNotNull($user);
-        $this->assertSame($email, $user['email']);
-        $this->assertSame('student', $user['role']);
+        $this->assertSame($email, $user[0]['email']);
+        $this->assertSame('student', $user[0]['role']);
     }
 
     public function testLoginFailsWithWrongPassword(): void
@@ -68,13 +68,13 @@ final class DatabaseIntegrationTest extends TestCase
         $email = 'session_' . bin2hex(random_bytes(4)) . '@example.com';
         $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'student');
         $user = $this->users->loginUser($email, 'Secret123!');
-        $session = ['auth_fingerprint' => SessionPolicy::fingerprint($user['password'])];
+        $session = ['auth_fingerprint' => SessionPolicy::fingerprint($user[0]['password'])];
 
-        $this->assertTrue(SessionPolicy::matchesUser($session, $this->users->getSessionState($user['id'])));
+        $this->assertTrue(SessionPolicy::matchesUser($session, $this->users->getSessionState($user[0]['id'])));
 
-        $this->assertTrue($this->users->updateUserPassword($user['id'], 'Secret123!', 'NewSecret456!'));
+        $this->assertTrue($this->users->updateUserPassword($user[0]['id'], 'Secret123!', 'NewSecret456!'));
 
-        $this->assertFalse(SessionPolicy::matchesUser($session, $this->users->getSessionState($user['id'])));
+        $this->assertFalse(SessionPolicy::matchesUser($session, $this->users->getSessionState($user[0]['id'])));
     }
 
     public function testFailedPasswordChangeOutputsNothingAndKeepsTheSession(): void
@@ -82,12 +82,12 @@ final class DatabaseIntegrationTest extends TestCase
         $email = 'session_' . bin2hex(random_bytes(4)) . '@example.com';
         $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'student');
         $user = $this->users->loginUser($email, 'Secret123!');
-        $session = ['auth_fingerprint' => SessionPolicy::fingerprint($user['password'])];
+        $session = ['auth_fingerprint' => SessionPolicy::fingerprint($user[0]['password'])];
 
         $this->expectOutputString('');
-        $this->assertFalse($this->users->updateUserPassword($user['id'], 'WrongPassword!', 'NewSecret456!'));
+        $this->assertFalse($this->users->updateUserPassword($user[0]['id'], 'WrongPassword!', 'NewSecret456!'));
 
-        $this->assertTrue(SessionPolicy::matchesUser($session, $this->users->getSessionState($user['id'])));
+        $this->assertTrue(SessionPolicy::matchesUser($session, $this->users->getSessionState($user[0]['id'])));
     }
 
     public function testSessionStateIsMissingForADeletedUser(): void
@@ -96,18 +96,19 @@ final class DatabaseIntegrationTest extends TestCase
         $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'student');
         $user = $this->users->loginUser($email, 'Secret123!');
 
-        $this->users->deleteUser($user['id']);
+        $this->users->deleteUser($user[0]['id']);
 
-        $this->assertNull($this->users->getSessionState($user['id']));
+        $this->assertNull($this->users->getSessionState($user[0]['id']));
     }
 
     public function testPromotionLifecycle(): void
     {
         $email = 'delegate_' . bin2hex(random_bytes(4)) . '@example.com';
-        $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'delegate');
+        $created = $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'delegate');
+        $this->assertTrue($this->users->activateUser($created[1]));
         $user = $this->users->loginUser($email, 'Secret123!');
 
-        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_id'] = $user[0]['id'];
 
         $promotionId = $this->promotions->createPromotion('Integration Test Promotion');
         $this->assertMatchesRegularExpression(
@@ -133,9 +134,10 @@ final class DatabaseIntegrationTest extends TestCase
     public function testFolderCreationAndListing(): void
     {
         $email = 'folderowner_' . bin2hex(random_bytes(4)) . '@example.com';
-        $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'delegate');
+        $created = $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'delegate');
+        $this->assertTrue($this->users->activateUser($created[1]));
         $user = $this->users->loginUser($email, 'Secret123!');
-        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_id'] = $user[0]['id'];
 
         $promotionId = $this->promotions->createPromotion('Folder Test Promotion');
 
@@ -150,7 +152,7 @@ final class DatabaseIntegrationTest extends TestCase
         $this->assertNotEmpty($folders);
         $this->assertSame('Root Folder', $folders[0]['name']);
 
-        $this->assertTrue($this->files->createFileRecord($user['id'], $promotionId, 'Original name.pdf', 'unused.pdf', 'application/pdf'));
+        $this->assertTrue($this->files->createFileRecord($user[0]['id'], $promotionId, 'Original name.pdf', 'unused.pdf', 'application/pdf'));
         $fileId = (string) $this->files->getPromotionPendingFiles($promotionId)[0]['id'];
         $this->assertTrue($this->files->approvePromotionFile($fileId));
         $this->assertTrue($this->promotions->renamePromotionFile($fileId, $promotionId, 'Renamed document.pdf'));
