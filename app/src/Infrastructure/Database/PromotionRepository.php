@@ -95,4 +95,25 @@ final class PromotionRepository extends DatabaseRepository
         $stmt->bindValue(3, InputSanitizer::sanitize($promotion_id), \PDO::PARAM_STR);
         return $stmt->execute();
     }
+
+    public function renamePromotionFile(string $file_id, string $promotion_id, string $original_name): bool
+    {
+        $original_name = trim($original_name);
+        if (preg_match('/\A.{1,255}\z/us', $original_name) !== 1 || preg_match('/[\x00-\x1F\x7F]/', $original_name) === 1) {
+            return false;
+        }
+
+        $fileStmt = $this->connection()->prepare(
+            "SELECT id FROM files WHERE id = ? AND promotion_id = ? AND status = 'approved'"
+        );
+        $fileStmt->execute([$file_id, $promotion_id]);
+        if (!$fileStmt->fetch()) {
+            return false;
+        }
+
+        $stmt = $this->connection()->prepare(
+            "UPDATE files SET original_name = ? WHERE id = ? AND promotion_id = ? AND status = 'approved'"
+        );
+        return $stmt->execute([$original_name, $file_id, $promotion_id]);
+    }
 }

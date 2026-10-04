@@ -149,5 +149,12 @@ final class DatabaseIntegrationTest extends TestCase
         $folders = $this->files->getPromotionFolders($promotionId);
         $this->assertNotEmpty($folders);
         $this->assertSame('Root Folder', $folders[0]['name']);
+
+        $this->assertTrue($this->files->createFileRecord($user['id'], $promotionId, 'Original name.pdf', 'unused.pdf', 'application/pdf'));
+        $fileId = (string) $this->files->getPromotionPendingFiles($promotionId)[0]['id'];
+        $this->assertTrue($this->files->approvePromotionFile($fileId));
+        $this->assertTrue($this->promotions->renamePromotionFile($fileId, $promotionId, 'Renamed document.pdf'));
+        $this->assertSame('Renamed document.pdf', $this->files->getFile($fileId)['original_name']);
+        $this->assertFalse($this->promotions->renamePromotionFile($fileId, '00000000-0000-0000-0000-000000000000', 'Wrong promotion.pdf'));
     }
 }

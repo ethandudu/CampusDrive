@@ -37,7 +37,7 @@ $error = '';
 // Only known message keys are translated: the translations may contain trusted HTML,
 // so arbitrary user input must never reach t().
 $allowedErrorKeys = ['invalid_email_domain', 'email_already_invited'];
-$allowedSuccessKeys = ['invitation_deleted'];
+$allowedSuccessKeys = ['invitation_deleted', 'file_renamed'];
 
 if (isset($_GET['error']) && is_string($_GET['error']) && in_array($_GET['error'], $allowedErrorKeys, true)) {
     $error = t($_GET['error']);
@@ -126,6 +126,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_file') {
     $file_id = (string) $_POST['element_id'];
     $fileRepository->rejectPromotionFile($file_id);
+}
+
+// Rename an approved file in this delegate's promotion.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'rename_file') {
+    $file_id = isset($_POST['element_id']) && is_string($_POST['element_id']) ? $_POST['element_id'] : '';
+    $original_name = isset($_POST['original_name']) && is_string($_POST['original_name']) ? $_POST['original_name'] : '';
+    if ($file_id !== '' && $promotionRepository->renamePromotionFile($file_id, $_SESSION['promotion_id'], $original_name)) {
+        header('Location: delegate.php?success=file_renamed');
+        exit;
+    }
+    $error = t('generic_error');
 }
 
 // Validation or rejection of files
@@ -400,6 +411,29 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
         </div>
     </div>
 </div>
+<div class="modal fade" id="renameFileModal" tabindex="-1" aria-labelledby="renameFileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="renameFileForm" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="renameFileModalLabel"><?= t('rename_file') ?></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= t('cancel') ?>"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="renameFileName" class="form-label"><?= t('file_name') ?></label>
+                    <input type="text" class="form-control" id="renameFileName" name="original_name" maxlength="255" required>
+                    <input type="hidden" name="action" value="rename_file">
+                    <input type="hidden" id="renameFileId" name="element_id">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= t('cancel') ?></button>
+                    <button type="submit" class="btn btn-success"><?= t('save') ?></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const locale = <?= json_encode(locale()) ?>;
@@ -407,6 +441,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
         'back' => t('back'),
         'delete' => t('delete'),
         'view' => t('view'),
+        'edit' => t('edit_item'),
         'emptyFolder' => t('empty_folder'),
         'createFolderIn' => t('create_folder_in'),
         'root' => t('root'),
@@ -467,7 +502,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                             <tr>
                                 <td>📄 ${escapeHtml(file.original_name)}</td>
                                 <td>${file.created_at ? new Date(file.created_at).toLocaleString(locale) : ''}</td>
-                                <td><a href="view.php?id=${escapeHtml(encodeURIComponent(file.id))}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a><button class="btn btn-sm btn-outline-danger" data-action="delete-file" data-id="${escapeHtml(file.id)}">${labels.delete}</button></td>
+                                <td><a href="view.php?id=${escapeHtml(encodeURIComponent(file.id))}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a><button class="btn btn-sm btn-outline-warning" data-action="edit-file" data-id="${escapeHtml(file.id)}" data-name="${escapeHtml(file.original_name)}">${labels.edit}</button><button class="btn btn-sm btn-outline-danger" data-action="delete-file" data-id="${escapeHtml(file.id)}">${labels.delete}</button></td>
                             </tr>
                         `);
                     });
@@ -497,13 +532,24 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
         new bootstrap.Modal(document.getElementById('deleteModal')).show();
     }
 
+    function editFile(fileId, fileName) {
+        document.getElementById('renameFileId').value = fileId;
+        document.getElementById('renameFileName').value = fileName;
+        new bootstrap.Modal(document.getElementById('renameFileModal')).show();
+    }
+
     document.querySelector('#folderTable tbody').addEventListener('click', event => {
         const button = event.target.closest('[data-action]');
         if (!button) {
             return;
         }
-        const handlers = {'open-folder': openFolder, 'delete-folder': deleteFolder, 'delete-file': deleteFile};
-        handlers[button.dataset.action]?.(button.dataset.id);
+        const handlers = {
+            'open-folder': () => openFolder(button.dataset.id),
+            'delete-folder': () => deleteFolder(button.dataset.id),
+            'delete-file': () => deleteFile(button.dataset.id),
+            'edit-file': () => editFile(button.dataset.id, button.dataset.name),
+        };
+        handlers[button.dataset.action]?.();
     });
 
     document.addEventListener('DOMContentLoaded', function () {
