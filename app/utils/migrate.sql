@@ -40,6 +40,8 @@ BEGIN
             ALTER TABLE promotions
                 ADD COLUMN IF NOT EXISTS announcement_text TEXT DEFAULT NULL,
                 ADD COLUMN IF NOT EXISTS announcement_enabled BOOLEAN DEFAULT FALSE;
+            INSERT INTO settings(setting_key, value)
+            VALUES ('announcement_text', 'Bienvenue sur CampusDrive !'), ('announcement_enabled', 'false');
         END IF;
     END IF;
 END//
