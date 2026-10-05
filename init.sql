@@ -5,13 +5,26 @@ CREATE TABLE users (
     role ENUM('admin', 'delegate', 'student') NOT NULL DEFAULT 'student',
     language VARCHAR(5) NOT NULL DEFAULT 'fr',
     promotion_id UUID DEFAULT NULL,
+    activation_token VARCHAR(64) UNIQUE DEFAULT NULL,
+    totp VARCHAR(32) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE password_reset_tokens (
+    token_hash CHAR(64) PRIMARY KEY,
+    user_id UUID NOT NULL,
+    expires_at BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_password_reset_tokens_user_id (user_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE promotions (
     id UUID PRIMARY KEY DEFAULT (UUID()),
     name VARCHAR(255) NOT NULL,
     status ENUM('pending', 'active') DEFAULT 'pending',
+    announcement_text TEXT DEFAULT NULL,
+    announcement_enabled BOOLEAN DEFAULT FALSE,
     created_by UUID DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
@@ -63,6 +76,14 @@ CREATE TABLE logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE settings (
+    setting_key VARCHAR(255) UNIQUE NOT NULL PRIMARY KEY ,
+    value TEXT NOT NULL
+);
+
+INSERT INTO settings (setting_key, value)
+VALUES ('db_version', '1.0'), ('announcement_text', 'Bienvenue sur CampusDrive !'), ('announcement_enabled', 'false');
 
 INSERT INTO users (email, password, role)
 VALUES ('admin@campusdrive.fr', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');

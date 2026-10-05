@@ -3,19 +3,25 @@
 namespace Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
-use Database;
-
-require_once __DIR__ . '/../../utils/db.php';
+use CampusDrive\Infrastructure\Database\DatabaseConnection;
+use CampusDrive\Infrastructure\Database\FileRepository;
+use CampusDrive\Infrastructure\Database\PromotionRepository;
+use CampusDrive\Infrastructure\Database\UserRepository;
+use CampusDrive\Infrastructure\Session\SessionPolicy;
 
 /**
- * These tests exercise Database against a real MySQL/MariaDB instance using
- * the schema defined in init.sql. They are automatically skipped when no
+ * These tests exercise the database repositories against a real MySQL/MariaDB
+ * instance using the schema defined in init.sql. They are skipped when no
  * database is reachable (e.g. running "composer test" locally without
  * Docker), and run for real in the GitHub Actions workflow, which starts a
  * MariaDB service and loads init.sql before executing the suite.
  */
 final class DatabaseIntegrationTest extends TestCase
 {
+    private UserRepository $users;
+    private PromotionRepository $promotions;
+    private FileRepository $files;
+
     protected function setUp(): void
     {
         $host = getenv('DB_HOST') ?: '127.0.0.1';
@@ -28,6 +34,10 @@ final class DatabaseIntegrationTest extends TestCase
         fclose($socket);
 
         $_SESSION = [];
+        $pdo = DatabaseConnection::getConnection();
+        $this->users = new UserRepository($pdo);
+        $this->promotions = new PromotionRepository($pdo);
+        $this->files = new FileRepository($pdo);
     }
 
     public function testCreateAndLoginUser(): void
@@ -35,12 +45,12 @@ final class DatabaseIntegrationTest extends TestCase
         $email = 'integration_' . bin2hex(random_bytes(4)) . '@example.com';
         $password = password_hash('Secret123!', PASSWORD_DEFAULT);
 
-        $this->assertTrue(Database::createUser($email, $password, null, 'student'));
+        $this->assertTrue($this->users->createUser($email, $password, null, 'student')[0]);
 
-        $user = Database::loginUser($email, 'Secret123!');
+        $user = $this->users->loginUser($email, 'Secret123!');
         $this->assertNotNull($user);
-        $this->assertSame($email, $user['email']);
-        $this->assertSame('student', $user['role']);
+        $this->assertSame($email, $user[0]['email']);
+        $this->assertSame('student', $user[0]['role']);
     }
 
     public function testLoginFailsWithWrongPassword(): void
@@ -48,51 +58,105 @@ final class DatabaseIntegrationTest extends TestCase
         $email = 'integration_' . bin2hex(random_bytes(4)) . '@example.com';
         $password = password_hash('Secret123!', PASSWORD_DEFAULT);
 
-        Database::createUser($email, $password, null, 'student');
+        $this->users->createUser($email, $password, null, 'student');
 
-        $this->assertNull(Database::loginUser($email, 'WrongPassword!'));
+        $this->assertNull($this->users->loginUser($email, 'WrongPassword!'));
+    }
+
+    public function testPasswordChangeInvalidatesTheSessionFingerprint(): void
+    {
+        $email = 'session_' . bin2hex(random_bytes(4)) . '@example.com';
+        $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'student');
+        $user = $this->users->loginUser($email, 'Secret123!');
+        $session = ['auth_fingerprint' => SessionPolicy::fingerprint($user[0]['password'])];
+
+        $this->assertTrue(SessionPolicy::matchesUser($session, $this->users->getSessionState($user[0]['id'])));
+
+        $this->assertTrue($this->users->updateUserPassword($user[0]['id'], 'Secret123!', 'NewSecret456!'));
+
+        $this->assertFalse(SessionPolicy::matchesUser($session, $this->users->getSessionState($user[0]['id'])));
+    }
+
+    public function testFailedPasswordChangeOutputsNothingAndKeepsTheSession(): void
+    {
+        $email = 'session_' . bin2hex(random_bytes(4)) . '@example.com';
+        $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'student');
+        $user = $this->users->loginUser($email, 'Secret123!');
+        $session = ['auth_fingerprint' => SessionPolicy::fingerprint($user[0]['password'])];
+
+        $this->expectOutputString('');
+        $this->assertFalse($this->users->updateUserPassword($user[0]['id'], 'WrongPassword!', 'NewSecret456!'));
+
+        $this->assertTrue(SessionPolicy::matchesUser($session, $this->users->getSessionState($user[0]['id'])));
+    }
+
+    public function testSessionStateIsMissingForADeletedUser(): void
+    {
+        $email = 'session_' . bin2hex(random_bytes(4)) . '@example.com';
+        $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'student');
+        $user = $this->users->loginUser($email, 'Secret123!');
+
+        $this->users->deleteUser($user[0]['id']);
+
+        $this->assertNull($this->users->getSessionState($user[0]['id']));
     }
 
     public function testPromotionLifecycle(): void
     {
         $email = 'delegate_' . bin2hex(random_bytes(4)) . '@example.com';
-        Database::createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'delegate');
-        $user = Database::loginUser($email, 'Secret123!');
+        $created = $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'delegate');
+        $this->assertTrue($this->users->activateUser($created[1]));
+        $user = $this->users->loginUser($email, 'Secret123!');
 
-        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_id'] = $user[0]['id'];
 
-        $promotionId = Database::createPromotion('Integration Test Promotion');
+        $promotionId = $this->promotions->createPromotion('Integration Test Promotion');
         $this->assertMatchesRegularExpression(
             '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
             $promotionId
         );
-        $this->assertSame('pending', Database::getPromotionStatus($promotionId));
+        $this->assertSame('pending', $this->promotions->getPromotionStatus($promotionId));
 
-        $this->assertTrue(Database::updatePromotionStatus($promotionId, 'active'));
-        $this->assertSame('active', Database::getPromotionStatus($promotionId));
+        $this->assertTrue($this->promotions->updatePromotionStatus($promotionId, 'active'));
+        $this->assertSame('active', $this->promotions->getPromotionStatus($promotionId));
 
-        $details = Database::getPromotionDetails($promotionId);
+        $details = $this->promotions->getPromotionDetails($promotionId);
         $this->assertSame('Integration Test Promotion', $details['name']);
+
+        $this->assertTrue($this->promotions->updateAnnouncement($promotionId, 'Important update', false));
+        $this->assertSame(0, (int) $this->promotions->getAnnouncementDetails($promotionId)['announcement_enabled']);
+        $this->assertNull($this->promotions->getEnabledAnnouncement($promotionId));
+
+        $this->assertTrue($this->promotions->updateAnnouncement($promotionId, 'Important update', true));
+        $this->assertSame('Important update', $this->promotions->getEnabledAnnouncement($promotionId));
     }
 
     public function testFolderCreationAndListing(): void
     {
         $email = 'folderowner_' . bin2hex(random_bytes(4)) . '@example.com';
-        Database::createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'delegate');
-        $user = Database::loginUser($email, 'Secret123!');
-        $_SESSION['user_id'] = $user['id'];
+        $created = $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'delegate');
+        $this->assertTrue($this->users->activateUser($created[1]));
+        $user = $this->users->loginUser($email, 'Secret123!');
+        $_SESSION['user_id'] = $user[0]['id'];
 
-        $promotionId = Database::createPromotion('Folder Test Promotion');
+        $promotionId = $this->promotions->createPromotion('Folder Test Promotion');
 
-        $folderId = Database::createFolder($promotionId, null, 'Root Folder');
+        $folderId = $this->files->createFolder($promotionId, null, 'Root Folder');
         $this->assertIsString($folderId);
         $this->assertMatchesRegularExpression(
             '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
             $folderId
         );
 
-        $folders = Database::getPromotionFolders($promotionId);
+        $folders = $this->files->getPromotionFolders($promotionId);
         $this->assertNotEmpty($folders);
         $this->assertSame('Root Folder', $folders[0]['name']);
+
+        $this->assertTrue($this->files->createFileRecord($user[0]['id'], $promotionId, 'Original name.pdf', 'unused.pdf', 'application/pdf'));
+        $fileId = (string) $this->files->getPromotionPendingFiles($promotionId)[0]['id'];
+        $this->assertTrue($this->files->approvePromotionFile($fileId));
+        $this->assertTrue($this->promotions->renamePromotionFile($fileId, $promotionId, 'Renamed document.pdf'));
+        $this->assertSame('Renamed document.pdf', $this->files->getFile($fileId)['original_name']);
+        $this->assertFalse($this->promotions->renamePromotionFile($fileId, '00000000-0000-0000-0000-000000000000', 'Wrong promotion.pdf'));
     }
 }

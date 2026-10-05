@@ -33,6 +33,7 @@ define('MAIL_USERNAME', 'test@example.com');
 define('MAIL_PASSWORD', 'test');
 define('MAIL_FROM', 'test@example.com');
 define('MAIL_FROM_NAME', 'CampusDrive Test');
+define('APP_BASE_URL', 'http://localhost');
 
 define('UNIVERSITY_EMAIL_DOMAINS', ['example.com']);
 
@@ -40,3 +41,8 @@ PHP;
 
     file_put_contents($configFile, $contents);
 }
+
+// Loaded once here so every test can rely on the DB_* constants being
+// defined without requiring utils/config.php (a procedural file, not a
+// PSR-4 class) from each individual test.
+require_once $configFile;

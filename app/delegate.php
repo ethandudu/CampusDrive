@@ -1,5 +1,15 @@
 <?php
+use CampusDrive\Infrastructure\Database\FileRepository;
+use CampusDrive\Infrastructure\Database\InvitationRepository;
+use CampusDrive\Infrastructure\Database\PromotionRepository;
+use CampusDrive\Infrastructure\Database\UserRepository;
+
 require_once 'utils/db.php';
+
+$userRepository = new UserRepository();
+$promotionRepository = new PromotionRepository();
+$fileRepository = new FileRepository();
+$invitationRepository = new InvitationRepository();
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 require_once 'utils/mail.php';
@@ -16,7 +26,8 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-if (Database::getPromotionStatus($_SESSION['promotion_id']) == 'pending') {
+$promotionStatus = $promotionRepository->getPromotionStatus($_SESSION['promotion_id']);
+if ($promotionStatus == 'pending' || $promotionStatus == null) {
     header('Location: settings.php?error=promotion_inactive');
     exit;
 }
@@ -24,10 +35,15 @@ if (Database::getPromotionStatus($_SESSION['promotion_id']) == 'pending') {
 $success = '';
 $error = '';
 
-if (isset($_GET['error'])) {
+// Only known message keys are translated: the translations may contain trusted HTML,
+// so arbitrary user input must never reach t().
+$allowedErrorKeys = ['invalid_email_domain', 'email_already_invited'];
+$allowedSuccessKeys = ['invitation_deleted', 'file_renamed'];
+
+if (isset($_GET['error']) && is_string($_GET['error']) && in_array($_GET['error'], $allowedErrorKeys, true)) {
     $error = t($_GET['error']);
 }
-if (isset($_GET['success'])) {
+if (isset($_GET['success']) && is_string($_GET['success']) && in_array($_GET['success'], $allowedSuccessKeys, true)) {
     $success = t($_GET['success']);
 }
 
@@ -35,30 +51,38 @@ if (isset($_GET['folderId'])) {
     $folderId = ($_GET['folderId']) && $_GET['folderId'] !== 'null' && $_GET['folderId'] !== ''
         ? $_GET['folderId']
         : null;
-    $folderDetails = Database::getPromotionFolderFiles($folderId, $_SESSION['promotion_id']);
+    $folderDetails = $fileRepository->getPromotionFolderFiles($folderId, $_SESSION['promotion_id']);
 
     header('Content-Type: application/json');
     echo json_encode($folderDetails);
     exit;
 }
 
-// Handle invitation deletion
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['invitation_id'])) {
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+// Every state-changing request must carry a valid CSRF token.
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !is_string($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         die(t('security_error'));
     }
+}
+
+// Handle announcement update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['announcement_text'])) {
+    $announcement_text = trim($_POST['announcement_text']);
+    $announcement_enabled = isset($_POST['announcement_enabled']) && $_POST['announcement_enabled'] === '1';
+    $stmt = $promotionRepository->updateAnnouncement($_SESSION['promotion_id'], $announcement_text, $announcement_enabled);
+}
+
+// Handle invitation deletion
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['invitation_id'])) {
     $invitation_id = htmlspecialchars($_POST['invitation_id']);
-    Database::deleteInvitation($invitation_id);
+    $invitationRepository->deleteInvitation($invitation_id, $_SESSION['promotion_id']);
     header('Location: delegate.php?success=invitation_deleted');
     exit;
 }
 
 // Handle invitation generation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        die(t('security_error'));
-    }
-
+    $_POST['invite_email'] = strtolower(trim($_POST['invite_email']));
     //check if the email is in the allowed domains
     $email_domain = substr(strrchr($_POST['invite_email'], "@"), 1);
     if (!in_array($email_domain, UNIVERSITY_EMAIL_DOMAINS)) {
@@ -66,20 +90,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
         exit;
     }
 
-    if (Database::checkIfEmailIsAlreadyInvited($_POST['invite_email'], $_SESSION['promotion_id'])) {
+    if ($invitationRepository->checkIfEmailIsAlreadyInvited($_POST['invite_email'], $_SESSION['promotion_id'])) {
         header('Location: delegate.php?error=email_already_invited');
         exit;
     }
     $token = bin2hex(random_bytes(32));
 
-    Database::createInvitation($_POST['invite_email'], $_SESSION['promotion_id'], $token);
-
-    $promotionForInvite = Database::getPromotionDetails($_SESSION['promotion_id']);
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']);
-    $registerLink = $baseUrl . '/register.php?token=' . urlencode($token);
+    $invitationRepository->createInvitation($_POST['invite_email'], $_SESSION['promotion_id'], $token);
+    $promotionForInvite = $promotionRepository->getPromotionDetails($_SESSION['promotion_id']);
+    $registerLink = rtrim(APP_BASE_URL, '/') . '/register.php?token=' . urlencode($token);
     $invitationEmail = invitationEmailTemplate($promotionForInvite['name'] ?? '', $registerLink);
-    (new Mailer())->sendMail($_POST['invite_email'], $invitationEmail['subject'], $invitationEmail['body']);
+    new Mailer()->sendMail($_POST['invite_email'], $invitationEmail['subject'], $invitationEmail['body']);
+    header('Location: delegate.php?success=invitation_sent');
 }
 
 // Create new folder
@@ -89,39 +111,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         ? $_POST['parent_id']
         : null;
     if (!empty($folder_name)) {
-        Database::createFolder($_SESSION['promotion_id'], $parent_id, $folder_name);
+        $fileRepository->createFolder($_SESSION['promotion_id'], $parent_id, $folder_name);
     }
 }
 
 // Delete folder
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_folder') {
     $folder_id = $_POST['element_id'];
-    Database::deletePromotionFolder($folder_id);
+    $fileRepository->deletePromotionFolder($folder_id);
 }
 
 // Delete file
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_file') {
     $file_id = (string) $_POST['element_id'];
-    Database::rejectPromotionFile($file_id);
+    $fileRepository->rejectPromotionFile($file_id);
+}
+
+// Rename an approved file in this delegate's promotion.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'rename_file') {
+    $file_id = isset($_POST['element_id']) && is_string($_POST['element_id']) ? $_POST['element_id'] : '';
+    $original_name = isset($_POST['original_name']) && is_string($_POST['original_name']) ? $_POST['original_name'] : '';
+    if ($file_id !== '' && $promotionRepository->renamePromotionFile($file_id, $_SESSION['promotion_id'], $original_name)) {
+        header('Location: delegate.php?success=file_renamed');
+        exit;
+    }
+    $error = t('generic_error');
 }
 
 // Validation or rejection of files
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        die(t('security_error'));
-    }
     $file_id = (string) $_POST['file_id'];
-    $file = Database::getFile($file_id);
-    $uploader = $file ? Database::getUserDetails((string) $file['user_id']) : null;
+    $file = $fileRepository->getFile($file_id);
+    $uploader = $file ? $userRepository->getUserDetails((string) $file['user_id']) : null;
 
     if ($_POST['file_action'] === 'approve') {
-        Database::approvePromotionFile($file_id);
+        $fileRepository->approvePromotionFile($file_id);
         if ($file && $uploader && !empty($uploader['email'])) {
             $fileApprovedEmail = fileApprovedEmailTemplate($file['original_name']);
             (new Mailer())->sendMail($uploader['email'], $fileApprovedEmail['subject'], $fileApprovedEmail['body']);
         }
     } elseif ($_POST['file_action'] === 'reject') {
-        Database::rejectPromotionFile($file_id);
+        $fileRepository->rejectPromotionFile($file_id);
         if ($file && $uploader && !empty($uploader['email'])) {
             $fileRejectedEmail = fileRejectedEmailTemplate($file['original_name']);
             (new Mailer())->sendMail($uploader['email'], $fileRejectedEmail['subject'], $fileRejectedEmail['body']);
@@ -129,9 +159,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_action'])) {
     }
 }
 
-$pending_files = Database::getPromotionPendingFiles($_SESSION['promotion_id']);
-$promo = Database::getPromotionDetails($_SESSION['promotion_id']);
-$invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
+$pending_files = $fileRepository->getPromotionPendingFiles($_SESSION['promotion_id']);
+$promo = $promotionRepository->getPromotionDetails($_SESSION['promotion_id']);
+$invitations = $invitationRepository->getPromotionInvitations($_SESSION['promotion_id']);
 
 ?>
 <!DOCTYPE html>
@@ -151,7 +181,10 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
             <a href="student.php" class="btn btn-outline-light btn-sm me-2"><?= t('home') ?></a>
             <a href="delegate.php" class="btn btn-light btn-sm me-2"><?= t('delegate_area') ?></a>
             <a href="settings.php" class="btn btn-outline-light btn-sm me-2"><?= t('settings') ?></a>
-            <a href="logout.php" class="btn btn-outline-danger btn-sm"><?= t('logout') ?></a>
+            <form method="POST" action="logout.php" class="d-inline">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <button type="submit" class="btn btn-outline-danger btn-sm"><?= t('logout') ?></button>
+            </form>
         </div>
     </div>
 </nav>
@@ -180,79 +213,130 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
             </div>
         </div>
         <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white fw-bold"><?= t('sent_invitations') ?></div>
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                    <tr>
-                        <th>Email</th>
-                        <th><?= t('status') ?></th>
-                        <th><?= t('date') ?></th>
-                        <th><?= t('action') ?></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($invitations as $inv): ?>
-                        <tr>
-                            <td><?= htmlspecialchars($inv['email']) ?></td>
-                            <td>
-                                <?php if ($inv['is_used']): ?>
-                                    <span class="badge bg-secondary"><?= t('registered') ?></span>
-                                <?php else: ?>
-                                    <span class="badge bg-warning text-dark"><?= t('pending') ?></span>
-                                <?php endif; ?>
-                            </td>
-                            <td><?= date('d/m/Y H:i', strtotime($inv['created_at'])) ?></td>
-                            <td>
-                                <form method="POST" class="d-inline">
-                                    <input type="hidden" name="invitation_id" value="<?= $inv['id'] ?>">
-                                    <button type="submit" name="action" value="delete" class="btn btn-sm btn-danger" onclick="return confirm('<?= t('delete_confirmation') ?>');"><?= t('delete') ?></button>
-                                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                                </form>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                    <?php if(empty($invitations)): ?>
-                        <tr><td colspan="4" class="text-center text-muted"><?= t('no_invitations') ?></td></tr>
-                    <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-            <div class="card shadow-sm mt-4">
-                <div class="card-header bg-white fw-bold"><?= t('files_pending') ?></div>
-                <div class="card-body p-0">
-                    <?php if (empty($pending_files)): ?>
-                        <p class="text-muted p-3 mb-0"><?= t('no_files_pending') ?></p>
-                    <?php else: ?>
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                            <tr>
-                                <th><?= t('file') ?></th>
-                                <th><?= t('author') ?></th>
-                                <th><?= t('action') ?></th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <?php foreach ($pending_files as $pf): ?>
+            <div class="accordion mb-4" id="invitationsAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInvitations" aria-expanded="false" aria-controls="collapseInvitations">
+                            <?= t('sent_invitations') ?> (<?= count($invitations) ?>)
+                        </button>
+                    </h2>
+                    <div id="collapseInvitations" class="accordion-collapse collapse">
+                        <div class="accordion-body p-0">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
                                 <tr>
-                                    <td class="align-middle">
-                                        <b><?= htmlspecialchars($pf['original_name']) ?></b>
-                                    </td>
-                                    <td class="align-middle"><?= htmlspecialchars($pf['uploader_email']) ?></td>
-                                    <td class="align-middle">
-                                        <a href="view.php?id=<?= $pf['id'] ?>" target="_blank" class="btn btn-sm btn-outline-info me-2"><?= t('preview') ?></a>
-                                        <form method="POST" class="d-inline">
-                                            <input type="hidden" name="file_id" value="<?= $pf['id'] ?>">
-                                            <button type="submit" name="file_action" value="approve" class="btn btn-sm btn-success"><?= t('approve') ?></button>
-                                            <button type="submit" name="file_action" value="reject" class="btn btn-sm btn-danger"><?= t('reject') ?></button>
-                                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                                        </form>
-                                    </td>
+                                    <th>Email</th>
+                                    <th><?= t('status') ?></th>
+                                    <th><?= t('date') ?></th>
+                                    <th><?= t('action') ?></th>
                                 </tr>
-                            <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($invitations as $inv): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($inv['email']) ?></td>
+                                        <td>
+                                            <?php if ($inv['is_used']): ?>
+                                                <span class="badge bg-secondary"><?= t('registered') ?></span>
+                                            <?php else: ?>
+                                                <span class="badge bg-warning text-dark"><?= t('pending') ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?= date('d/m/Y H:i', strtotime($inv['created_at'])) ?></td>
+                                        <td>
+                                            <form method="POST" class="d-inline">
+                                                <input type="hidden" name="invitation_id" value="<?= $inv['id'] ?>">
+                                                <?php if (!$inv['is_used']): ?>
+                                                    <button type="submit" name="action" value="delete" class="btn btn-sm btn-danger" onclick="return confirm('<?= t('delete_confirmation') ?>');"><?= t('delete') ?></button>
+                                                <?php endif; ?>
+                                                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                <?php if (empty($invitations)): ?>
+                                    <tr><td colspan="4" class="text-center text-muted"><?= t('no_invitations') ?></td></tr>
+                                <?php endif; ?>
+                                </tbody>
+                            </table>
+                            <small class="text-muted d-block p-2"><?= t('remove_student_info') ?></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion mt-4" id="pendingFilesAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePendingFiles" aria-expanded="false" aria-controls="collapsePendingFiles">
+                            <?= t('files_pending') ?> (<?= count($pending_files) ?>)
+                        </button>
+                    </h2>
+                    <div id="collapsePendingFiles" class="accordion-collapse collapse">
+                        <div class="accordion-body p-0">
+                            <?php if (empty($pending_files)): ?>
+                                <p class="text-muted p-3 mb-0"><?= t('no_files_pending') ?></p>
+                            <?php else: ?>
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                    <tr>
+                                        <th><?= t('file') ?></th>
+                                        <th><?= t('author') ?></th>
+                                        <th><?= t('action') ?></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php foreach ($pending_files as $pf): ?>
+                                        <tr>
+                                            <td class="align-middle">
+                                                <b><?= htmlspecialchars($pf['original_name']) ?></b>
+                                            </td>
+                                            <td class="align-middle"><?= htmlspecialchars($pf['uploader_email']) ?></td>
+                                            <td class="align-middle">
+                                                <a href="view.php?id=<?= $pf['id'] ?>" target="_blank" class="btn btn-sm btn-outline-info me-2"><?= t('preview') ?></a>
+                                                <form method="POST" class="d-inline">
+                                                    <input type="hidden" name="file_id" value="<?= $pf['id'] ?>">
+                                                    <button type="submit" name="file_action" value="approve" class="btn btn-sm btn-success"><?= t('approve') ?></button>
+                                                    <button type="submit" name="file_action" value="reject" class="btn btn-sm btn-danger"><?= t('reject') ?></button>
+                                                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion mt-4" id="announcementAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAnnouncement" aria-expanded="false" aria-controls="collapseAnnouncement">
+                            <?= t('announcement') ?>
+                        </button>
+                    </h2>
+                    <div id="collapseAnnouncement" class="accordion-collapse collapse">
+                        <div class="accordion-body p-0">
+                            <?php
+                            $announcement = $promotionRepository->getAnnouncementDetails($_SESSION['promotion_id']);
+                            ?>
+
+                            <form method="post">
+                                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                <div class="mb-3">
+                                    <label for="announcementText" class="form-label"><?= t('announcement_text') ?></label>
+                                    <textarea class="form-control" id="announcementText" name="announcement_text" rows="3"><?= htmlspecialchars($announcement['announcement_text'] ?? '') ?></textarea>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input type="hidden" name="announcement_enabled" value="0">
+                                    <input class="form-check-input" type="checkbox" id="announcementEnabled" name="announcement_enabled" value="1" <?= !empty($announcement['announcement_enabled']) ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="announcementEnabled"><?= t('announcement_enabled') ?></label>
+                                </div>
+                                <button type="submit" class="btn btn-success"><?= t('save') ?></button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="card shadow-sm mt-4">
@@ -326,6 +410,29 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
         </div>
     </div>
 </div>
+<div class="modal fade" id="renameFileModal" tabindex="-1" aria-labelledby="renameFileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="renameFileForm" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="renameFileModalLabel"><?= t('rename_file') ?></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= t('cancel') ?>"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="renameFileName" class="form-label"><?= t('file_name') ?></label>
+                    <input type="text" class="form-control" id="renameFileName" name="original_name" maxlength="255" required>
+                    <input type="hidden" name="action" value="rename_file">
+                    <input type="hidden" id="renameFileId" name="element_id">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= t('cancel') ?></button>
+                    <button type="submit" class="btn btn-success"><?= t('save') ?></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const locale = <?= json_encode(locale()) ?>;
@@ -333,14 +440,19 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
         'back' => t('back'),
         'delete' => t('delete'),
         'view' => t('view'),
+        'edit' => t('edit_item'),
         'emptyFolder' => t('empty_folder'),
         'createFolderIn' => t('create_folder_in'),
         'root' => t('root'),
         'error' => t('generic_error'),
     ]) ?>;
 
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[char]));
+
     function openFolder(folderId) {
-        fetch(`delegate.php?folderId=${folderId}`)
+        fetch(`delegate.php?folderId=${encodeURIComponent(folderId)}`)
             .then(response => response.json())
             .then(data => {
                 const rows = [];
@@ -352,7 +464,7 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
                     rows.push(`
                         <tr>
                             <td>
-                                <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="openFolder('${previousFolderId}')">
+                                <button class="btn btn-sm btn-link p-0 text-decoration-none" data-action="open-folder" data-id="${escapeHtml(previousFolderId)}">
                                     📁.. / ${labels.back}
                                 </button>
                             </td>
@@ -364,17 +476,18 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
 
                 if (data.folders && data.folders.length) {
                     hasContent = true;
+                    // Folder names are stored already HTML-encoded (see FileRepository::createFolder).
                     data.folders.forEach(folder => {
                         rows.push(`
                             <tr>
                                 <td>
-                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" onclick="openFolder('${folder.id}')">
+                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" data-action="open-folder" data-id="${escapeHtml(folder.id)}">
                                         📁 ${folder.name}
                                     </button>
                                 </td>
                                 <td>${folder.created_at ? new Date(folder.created_at).toLocaleString(locale) : ''}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteFolder('${folder.id}')">${labels.delete}</button>
+                                    <button class="btn btn-sm btn-outline-danger" data-action="delete-folder" data-id="${escapeHtml(folder.id)}">${labels.delete}</button>
                                 </td>
                             </tr>
                         `);
@@ -386,9 +499,9 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
                     data.files.forEach(file => {
                         rows.push(`
                             <tr>
-                                <td>📄 ${file.original_name}</td>
+                                <td>📄 ${escapeHtml(file.original_name)}</td>
                                 <td>${file.created_at ? new Date(file.created_at).toLocaleString(locale) : ''}</td>
-                                <td><a href="view.php?id=${file.id}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a><button class="btn btn-sm btn-outline-danger" onclick="deleteFile('${file.id}')">${labels.delete}</button></td>
+                                <td><a href="view.php?id=${escapeHtml(encodeURIComponent(file.id))}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a><button class="btn btn-sm btn-outline-warning" data-action="edit-file" data-id="${escapeHtml(file.id)}" data-name="${escapeHtml(file.original_name)}">${labels.edit}</button><button class="btn btn-sm btn-outline-danger" data-action="delete-file" data-id="${escapeHtml(file.id)}">${labels.delete}</button></td>
                             </tr>
                         `);
                     });
@@ -417,6 +530,26 @@ $invitations = Database::getPromotionInvitations($_SESSION['promotion_id']);
         document.querySelector('#deleteForm input[name="action"]').value = 'delete_file';
         new bootstrap.Modal(document.getElementById('deleteModal')).show();
     }
+
+    function editFile(fileId, fileName) {
+        document.getElementById('renameFileId').value = fileId;
+        document.getElementById('renameFileName').value = fileName;
+        new bootstrap.Modal(document.getElementById('renameFileModal')).show();
+    }
+
+    document.querySelector('#folderTable tbody').addEventListener('click', event => {
+        const button = event.target.closest('[data-action]');
+        if (!button) {
+            return;
+        }
+        const handlers = {
+            'open-folder': () => openFolder(button.dataset.id),
+            'delete-folder': () => deleteFolder(button.dataset.id),
+            'delete-file': () => deleteFile(button.dataset.id),
+            'edit-file': () => editFile(button.dataset.id, button.dataset.name),
+        };
+        handlers[button.dataset.action]?.();
+    });
 
     document.addEventListener('DOMContentLoaded', function () {
         openFolder(null);

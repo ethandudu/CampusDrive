@@ -32,6 +32,15 @@ class Mailer {
             $this->mail->isHTML(true);
             $this->mail->Subject = $subject;
             $this->mail->Body    = $body;
+            if (str_contains($body, 'cid:campusdrive-logo')) {
+                $this->mail->addEmbeddedImage(
+                    __DIR__ . '/../assets/img/campusdrivewhite.png',
+                    'campusdrive-logo',
+                    'campusdrivewhite.png',
+                    PHPMailer::ENCODING_BASE64,
+                    'image/png'
+                );
+            }
             $this->mail->send();
             return true;
         } catch (Exception $e) {

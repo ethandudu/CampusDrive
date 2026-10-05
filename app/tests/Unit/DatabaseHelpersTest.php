@@ -3,43 +3,32 @@
 namespace Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
-use Database;
-
-require_once __DIR__ . '/../../utils/db.php';
+use CampusDrive\Infrastructure\Database\InputSanitizer;
 
 /**
- * Unit tests for the pure/static helper logic on Database that does not
- * require an actual database connection.
+ * Unit tests for input helpers that do not require a database connection.
  */
 final class DatabaseHelpersTest extends TestCase
 {
-    private function callPrivateStatic(string $method, array $args = []): mixed
-    {
-        $reflection = new ReflectionMethod(Database::class, $method);
-
-        return $reflection->invokeArgs(null, $args);
-    }
-
     public function testSanitizeInputTrimsAndEscapesHtml(): void
     {
-        $result = $this->callPrivateStatic('sanitizeInput', [' <b>hi</b> ']);
+        $result = InputSanitizer::sanitize(' <b>hi</b> ');
         $this->assertSame('&lt;b&gt;hi&lt;/b&gt;', $result);
     }
 
     public function testSanitizeInputReturnsNullForEmptyValues(): void
     {
-        $this->assertNull($this->callPrivateStatic('sanitizeInput', [null]));
-        $this->assertNull($this->callPrivateStatic('sanitizeInput', ['']));
+        $this->assertNull(InputSanitizer::sanitize(null));
+        $this->assertNull(InputSanitizer::sanitize(''));
     }
 
     public function testValidateEmailAcceptsValidAddress(): void
     {
-        $this->assertTrue($this->callPrivateStatic('validateEmail', ['student@example.com']));
+        $this->assertTrue(InputSanitizer::isValidEmail('student@example.com'));
     }
 
     public function testValidateEmailRejectsInvalidAddress(): void
     {
-        $this->assertFalse($this->callPrivateStatic('validateEmail', ['not-an-email']));
+        $this->assertFalse(InputSanitizer::isValidEmail('not-an-email'));
     }
 }

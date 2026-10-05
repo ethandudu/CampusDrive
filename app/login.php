@@ -1,5 +1,9 @@
 <?php
+use CampusDrive\Infrastructure\Database\UserRepository;
+
 require_once 'utils/db.php';
+
+$userRepository = new UserRepository();
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 $compose = json_decode(file_get_contents(__DIR__ . '/composer.json'), true);
@@ -11,8 +15,28 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-if (isset($_GET['registered'])){
+if (isset($_GET['registered']) && $_GET['registered'] === '1') {
     $message = t('registration_success');
+}
+
+if (isset($_GET['registered']) && $_GET['registered'] === '2') {
+    $message = t('registration_waiting_confirmation');
+}
+
+if (isset($_GET['locked'])) {
+    $error = t('too_many_attempts');
+}
+
+if (isset($_GET['error'])) {
+    $error = t('account_not_activated');
+}
+
+if (isset($_GET['activated'])) {
+    if ($_GET['activated'] === '1') {
+        $message = t('account_activated');
+    } else {
+        $error = t('activation_failed');
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -29,12 +53,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $user = Database::loginUser($_POST['email'], $_POST['password']);
+    $user = $userRepository->loginUser($_POST['email'], $_POST['password']);
 
     if ($user !== null) {
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['role'] = $user['role'];
-        $_SESSION['promotion_id'] = $user['promotion_id'];
+        if (isset($user['error'])) {
+            header('Location: login.php?error=' . urlencode($user['error']));
+            exit;
+        }
+
+        $user = $user[0];
+        startAuthenticatedSession($user);
         $_SESSION['locale'] = in_array($user['language'] ?? null, array_keys(SUPPORTED_LOCALES), true)
             ? $user['language']
             : DEFAULT_LOCALE;
@@ -98,9 +126,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label for="password" class="form-label"><?= t('password') ?></label>
                             <input type="password" class="form-control" id="password" name="password" required>
                         </div>
-                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="action" value="login">
                         <button type="submit" class="btn btn-primary w-100"><?= t('sign_in') ?></button>
+                        <button type="submit" class="btn btn-outline-secondary w-100 mt-2"
+                                formaction="forgot_password.php" formmethod="post" formnovalidate>
+                            <?= t('request_password_reset') ?>
+                        </button>
                     </form>
                     <div class="mt-3 text-center">
                         <a href="register.php" class="text-decoration-none"><?= t('create_account') ?></a>

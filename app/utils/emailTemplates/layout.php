@@ -30,7 +30,7 @@ if (!function_exists('renderEmailLayout')) {
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
 <tr>
 <td style="background-color:#0d6efd;padding:20px 32px;">
-<span style="color:#ffffff;font-size:20px;font-weight:bold;">CampusDrive</span>
+<img src="cid:campusdrive-logo" alt="CampusDrive" width="220" style="display:block;width:220px;max-width:100%;height:auto;border:0;">
 </td>
 </tr>
 <tr>
