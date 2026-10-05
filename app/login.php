@@ -27,7 +27,7 @@ if (isset($_GET['locked'])) {
     $error = t('too_many_attempts');
 }
 
-if (isset($_GET['account_not_activated'])) {
+if (isset($_GET['error'])) {
     $error = t('account_not_activated');
 }
 
@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($user !== null) {
         if (isset($user['error'])) {
-            header('Location: login.php?'.http_build_query([$user['error']]));
+            header('Location: login.php?error=' . urlencode($user['error']));
             exit;
         }
 
