@@ -25,6 +25,18 @@ final class XssProtectionTest extends TestCase
         $this->assertStringContainsString('<img src="cid:campusdrive-logo" alt="CampusDrive"', $body);
     }
 
+    public function testEmbeddedCampusDriveLogoUsesAnEmailCompatiblePng(): void
+    {
+        $logoPath = __DIR__ . '/../../assets/img/campusdrivewhite.png';
+        $mailer = file_get_contents(__DIR__ . '/../../utils/mail.php');
+
+        $this->assertFileExists($logoPath);
+        $this->assertSame('image/png', (new \finfo(FILEINFO_MIME_TYPE))->file($logoPath));
+        $this->assertNotFalse($mailer);
+        $this->assertStringContainsString('campusdrivewhite.png', $mailer);
+        $this->assertStringContainsString("'image/png'", $mailer);
+    }
+
     public function testDelegatePageOnlyTranslatesWhitelistedQueryParameters(): void
     {
         $contents = file_get_contents(__DIR__ . '/../../delegate.php');

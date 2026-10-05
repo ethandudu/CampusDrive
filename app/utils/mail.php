@@ -34,11 +34,11 @@ class Mailer {
             $this->mail->Body    = $body;
             if (str_contains($body, 'cid:campusdrive-logo')) {
                 $this->mail->addEmbeddedImage(
-                    __DIR__ . '/../assets/img/campusdrivewhite.webp',
+                    __DIR__ . '/../assets/img/campusdrivewhite.png',
                     'campusdrive-logo',
-                    'campusdrivewhite.webp',
+                    'campusdrivewhite.png',
                     PHPMailer::ENCODING_BASE64,
-                    'image/webp'
+                    'image/png'
                 );
             }
             $this->mail->send();
