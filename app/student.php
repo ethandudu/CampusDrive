@@ -158,13 +158,13 @@ if (!$my_pending_files) {
 <div class="container">
     <?php if ($adminAnnouncement !== null): ?>
         <div id="announcement" class="alert alert-info alert-dismissible d-none" role="status">
-            <strong><?= t('announcement') ?>:</strong> <?= htmlspecialchars($adminAnnouncement, ENT_QUOTES, 'UTF-8') ?>
+            <strong><?= t('announcement') ?>:</strong> <?= $adminAnnouncement ?>
             <button id="dismissAnnouncement" type="button" class="btn-close" data-bs-dismiss="alert" aria-label="<?= t('close') ?>"></button>
         </div>
     <?php endif; ?>
     <?php if ($studentAnnouncement !== null): ?>
         <div id="studentAnnouncement" class="alert alert-info alert-dismissible d-none" role="status">
-            <strong><?= t('announcement') ?>:</strong> <?= htmlspecialchars($studentAnnouncement, ENT_QUOTES, 'UTF-8') ?>
+            <strong><?= t('announcement') ?>:</strong> <?= $studentAnnouncement?>
             <button id="dismissStudentAnnouncement" type="button" class="btn-close" data-bs-dismiss="alert" aria-label="<?= t('close') ?>"></button>
         </div>
     <?php endif; ?>
