@@ -326,7 +326,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                                 <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                 <div class="mb-3">
                                     <label for="announcementText" class="form-label"><?= t('announcement_text') ?></label>
-                                    <textarea class="form-control" id="announcementText" name="announcement_text" rows="3"><?= htmlspecialchars($announcement['announcement_text'] ?? '') ?></textarea>
+                                    <textarea class="form-control" id="announcementText" name="announcement_text" rows="3"><?= $announcement['announcement_text'] ?? '' ?></textarea>
                                 </div>
                                 <div class="form-check mb-3">
                                     <input type="hidden" name="announcement_enabled" value="0">
