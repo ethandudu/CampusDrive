@@ -27,7 +27,7 @@ BEGIN
     ELSE
         SET current_version_number = CAST(current_version AS DECIMAL(10, 2));
 
-        IF current_version_number > 1.0 THEN
+        IF current_version_number > 1.1 THEN
             SIGNAL SQLSTATE '45000'
                 SET MESSAGE_TEXT = 'Database version is newer than this migration script.';
         ELSEIF current_version_number < 1.0 THEN
@@ -42,6 +42,16 @@ BEGIN
                 ADD COLUMN IF NOT EXISTS announcement_enabled BOOLEAN DEFAULT FALSE;
             INSERT INTO settings(setting_key, value)
             VALUES ('announcement_text', 'Bienvenue sur CampusDrive !'), ('announcement_enabled', 'false');
+        ELSEIF current_version_number = 1.0 THEN
+            UPDATE settings
+            SET value = '1.1'
+            WHERE setting_key = 'db_version';
+            ALTER TABLE logs
+                MODIFY COLUMN user_id UUID DEFAULT NULL,
+                ADD COLUMN IF NOT EXISTS user_email VARCHAR(255) DEFAULT NULL AFTER user_id,
+                ADD COLUMN IF NOT EXISTS action VARCHAR(255) NOT NULL AFTER user_email,
+                ADD COLUMN IF NOT EXISTS status ENUM('success', 'failure') NOT NULL AFTER action,
+                ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45) NOT NULL AFTER status;
         END IF;
     END IF;
 END//

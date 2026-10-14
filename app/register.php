@@ -1,6 +1,7 @@
 <?php
 
 use CampusDrive\Infrastructure\Database\InvitationRepository;
+use CampusDrive\Infrastructure\Database\LogRepository;
 use CampusDrive\Infrastructure\Database\UserRepository;
 use CampusDrive\Infrastructure\Security\PasswordPolicy;
 
@@ -8,6 +9,7 @@ require_once 'utils/db.php';
 
 $userRepository = new UserRepository();
 $invitationRepository = new InvitationRepository();
+$logRepository = new LogRepository();
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 require_once 'dCaptcha/captcha.php';
@@ -75,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     //check if the email is in the allowed domains
     $email_domain = substr(strrchr($_POST['email'], "@"), 1);
     if (!in_array($email_domain, UNIVERSITY_EMAIL_DOMAINS)) {
+        $logRepository->logRegister(false, $_POST['email']);
         header('Location: register.php?error=invalid_email_domain');
         exit;
     }
@@ -107,6 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $role = $invitation['role'] ?? 'student';
             }
             $user = $userRepository->createUser($email, $password, $promo_id, $role);
+            $logRepository->logRegister($user[0] == 1, $email);
             if ($user[0] == 1) {
                 if ($role === 'student') {
                     $invitationRepository->markInvitationAsUsed($token);
@@ -122,8 +126,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
         } catch (\InvalidArgumentException $e) {
+            $logRepository->logRegister(false, $email);
             $error = $e->getMessage();
         }
+    } else {
+        $logRepository->logRegister(false, $email);
     }
 }
 ?>
