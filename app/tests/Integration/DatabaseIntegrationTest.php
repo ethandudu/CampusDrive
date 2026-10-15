@@ -103,8 +103,8 @@ final class DatabaseIntegrationTest extends TestCase
 
     public function testPromotionLifecycle(): void
     {
-        $email = 'delegate_' . bin2hex(random_bytes(4)) . '@example.com';
-        $created = $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'delegate');
+        $email = 'ambassador_' . bin2hex(random_bytes(4)) . '@example.com';
+        $created = $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'ambassador');
         $this->assertTrue($this->users->activateUser($created[1]));
         $user = $this->users->loginUser($email, 'Secret123!');
 
@@ -134,7 +134,7 @@ final class DatabaseIntegrationTest extends TestCase
     public function testFolderCreationAndListing(): void
     {
         $email = 'folderowner_' . bin2hex(random_bytes(4)) . '@example.com';
-        $created = $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'delegate');
+        $created = $this->users->createUser($email, password_hash('Secret123!', PASSWORD_DEFAULT), null, 'ambassador');
         $this->assertTrue($this->users->activateUser($created[1]));
         $user = $this->users->loginUser($email, 'Secret123!');
         $_SESSION['user_id'] = $user[0]['id'];

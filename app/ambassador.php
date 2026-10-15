@@ -17,7 +17,7 @@ require_once 'utils/emailTemplates/invitation.php';
 require_once 'utils/emailTemplates/file_approved.php';
 require_once 'utils/emailTemplates/file_rejected.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'delegate') {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'ambassador') {
     header('Location: login.php');
     exit;
 }
@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['announcement_text']))
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['invitation_id'])) {
     $invitation_id = htmlspecialchars($_POST['invitation_id']);
     $invitationRepository->deleteInvitation($invitation_id, $_SESSION['promotion_id']);
-    header('Location: delegate.php?success=invitation_deleted');
+    header('Location: ambassador.php?success=invitation_deleted');
     exit;
 }
 
@@ -86,12 +86,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
     //check if the email is in the allowed domains
     $email_domain = substr(strrchr($_POST['invite_email'], "@"), 1);
     if (!in_array($email_domain, UNIVERSITY_EMAIL_DOMAINS)) {
-        header('Location: delegate.php?error=invalid_email_domain');
+        header('Location: ambassador.php?error=invalid_email_domain');
         exit;
     }
 
     if ($invitationRepository->checkIfEmailIsAlreadyInvited($_POST['invite_email'], $_SESSION['promotion_id'])) {
-        header('Location: delegate.php?error=email_already_invited');
+        header('Location: ambassador.php?error=email_already_invited');
         exit;
     }
     $token = bin2hex(random_bytes(32));
@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
     $registerLink = rtrim(APP_BASE_URL, '/') . '/register.php?token=' . urlencode($token);
     $invitationEmail = invitationEmailTemplate($promotionForInvite['name'] ?? '', $registerLink);
     new Mailer()->sendMail($_POST['invite_email'], $invitationEmail['subject'], $invitationEmail['body']);
-    header('Location: delegate.php?success=invitation_sent');
+    header('Location: ambassador.php?success=invitation_sent');
 }
 
 // Create new folder
@@ -127,12 +127,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $fileRepository->rejectPromotionFile($file_id);
 }
 
-// Rename an approved file in this delegate's promotion.
+// Rename an approved file in this ambassador's promotion.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'rename_file') {
     $file_id = isset($_POST['element_id']) && is_string($_POST['element_id']) ? $_POST['element_id'] : '';
     $original_name = isset($_POST['original_name']) && is_string($_POST['original_name']) ? $_POST['original_name'] : '';
     if ($file_id !== '' && $promotionRepository->renamePromotionFile($file_id, $_SESSION['promotion_id'], $original_name)) {
-        header('Location: delegate.php?success=file_renamed');
+        header('Location: ambassador.php?success=file_renamed');
         exit;
     }
     $error = t('generic_error');
@@ -168,18 +168,18 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
 <html lang="<?= locale() ?>">
 <head>
     <meta charset="UTF-8">
-    <title><?= t('delegate_area') ?> - CampusDrive</title>
+    <title><?= t('ambassador_area') ?> - CampusDrive</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="assets/favicon.ico">
 </head>
 <body class="bg-light">
 <nav class="navbar navbar-dark bg-success mb-4 shadow">
     <div class="container">
-        <span class="navbar-brand mb-0 h1"><?= t('delegate_area') ?> (<?= htmlspecialchars($promo['name']) ?>)</span>
+        <span class="navbar-brand mb-0 h1"><?= t('ambassador_area') ?> (<?= htmlspecialchars($promo['name']) ?>)</span>
         <img src="assets/img/campusdrivewhite.webp" alt="Logo" class="img-fluid" style="max-height: 50px;">
         <div>
             <a href="student.php" class="btn btn-outline-light btn-sm me-2"><?= t('home') ?></a>
-            <a href="delegate.php" class="btn btn-light btn-sm me-2"><?= t('delegate_area') ?></a>
+            <a href="ambassador.php" class="btn btn-light btn-sm me-2"><?= t('ambassador_area') ?></a>
             <a href="settings.php" class="btn btn-outline-light btn-sm me-2"><?= t('settings') ?></a>
             <form method="POST" action="logout.php" class="d-inline">
                 <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
@@ -452,7 +452,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
     }[char]));
 
     function openFolder(folderId) {
-        fetch(`delegate.php?folderId=${encodeURIComponent(folderId)}`)
+        fetch(`ambassador.php?folderId=${encodeURIComponent(folderId)}`)
             .then(response => response.json())
             .then(data => {
                 const rows = [];

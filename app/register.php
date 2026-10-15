@@ -35,7 +35,7 @@ $token = htmlspecialchars(trim($_GET['token'] ?? ''));
 $invitation = null;
 $invited_email = '';
 $promo_id = null;
-$role = 'delegate';
+$role = 'ambassador';
 
 if (isset($_GET['error'])) {
     switch ($_GET['error']) {

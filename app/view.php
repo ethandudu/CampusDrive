@@ -20,14 +20,11 @@ if (!$file) {
     die(t('file_not_found'));
 }
 
-// Vérification des droits : l'utilisateur doit être dans la même promotion que le fichier
-// (ou être un administrateur)
 if ($_SESSION['role'] !== 'admin' && $_SESSION['promotion_id'] !== $file['promotion_id']) {
     die(t('file_access_denied'));
 }
 
-// Un étudiant ne peut voir le fichier que s'il est approuvé ou s'il en est l'auteur
-if ($file['status'] !== 'approved' && $_SESSION['user_id'] !== $file['user_id'] && $_SESSION['role'] !== 'delegate') {
+if ($file['status'] !== 'approved' && $_SESSION['user_id'] !== $file['user_id'] && $_SESSION['role'] !== 'ambassador') {
     die(t('file_pending_approval'));
 }
 
@@ -37,7 +34,6 @@ if ($full_path === null) {
     die(t('file_missing'));
 }
 
-// Envoi des en-têtes HTTP pour affichage direct dans le navigateur
 header('Content-Type: ' . $file['file_type']);
 header('X-Content-Type-Options: nosniff');
 header('Content-Disposition: inline; filename="' . basename($file['original_name']) . '"');

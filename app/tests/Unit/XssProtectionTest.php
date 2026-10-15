@@ -37,9 +37,9 @@ final class XssProtectionTest extends TestCase
         $this->assertStringContainsString("'image/png'", $mailer);
     }
 
-    public function testDelegatePageOnlyTranslatesWhitelistedQueryParameters(): void
+    public function testAmbassadorPageOnlyTranslatesWhitelistedQueryParameters(): void
     {
-        $contents = file_get_contents(__DIR__ . '/../../delegate.php');
+        $contents = file_get_contents(__DIR__ . '/../../ambassador.php');
         $this->assertNotFalse($contents);
 
         $this->assertStringContainsString('in_array($_GET[\'error\'], $allowedErrorKeys, true)', $contents);
@@ -53,7 +53,7 @@ final class XssProtectionTest extends TestCase
     {
         return [
             'student.php' => [__DIR__ . '/../../student.php'],
-            'delegate.php' => [__DIR__ . '/../../delegate.php'],
+            'ambassador.php' => [__DIR__ . '/../../ambassador.php'],
         ];
     }
 

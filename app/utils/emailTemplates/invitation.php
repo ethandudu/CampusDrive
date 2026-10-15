@@ -2,7 +2,7 @@
 require_once __DIR__ . '/layout.php';
 
 /**
- * Email sent to a student invited by a promotion delegate.
+ * Email sent to a student invited by a promotion ambassador.
  *
  * @param string $promotionName Name of the promotion the student is invited to.
  * @param string $registerLink  Full URL to the registration page, including the invitation token.
@@ -17,7 +17,7 @@ function invitationEmailTemplate(string $promotionName, string $registerLink): a
     $bodyFr = <<<HTML
 <h2 style="margin-top:0;color:#0d6efd;">Vous êtes invité(e) sur CampusDrive</h2>
 <p>Bonjour,</p>
-<p>Le délégué de la promotion <strong>{$safePromotion}</strong> vous invite à rejoindre son espace CampusDrive.</p>
+<p>Le parrain de la promotion <strong>{$safePromotion}</strong> vous invite à rejoindre son espace CampusDrive.</p>
 <p>Cliquez sur le lien ci-dessous pour créer votre compte :</p>
 <p style="text-align:center;margin:24px 0;">
 <a href="{$safeLink}" style="background-color:#0d6efd;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:6px;display:inline-block;">Créer mon compte</a>
@@ -28,7 +28,7 @@ HTML;
     $bodyEn = <<<HTML
 <h2 style="margin-top:0;color:#0d6efd;">You've been invited to CampusDrive</h2>
 <p>Hello,</p>
-<p>The delegate of the <strong>{$safePromotion}</strong> promotion has invited you to join their CampusDrive workspace.</p>
+<p>The ambassador of the <strong>{$safePromotion}</strong> promotion has invited you to join their CampusDrive workspace.</p>
 <p>Click the link below to create your account:</p>
 <p style="text-align:center;margin:24px 0;">
 <a href="{$safeLink}" style="background-color:#0d6efd;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:6px;display:inline-block;">Create my account</a>

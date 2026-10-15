@@ -143,8 +143,8 @@ if (!$my_pending_files) {
         <img src="assets/img/campusdrivewhite.webp" alt="Logo" class="img-fluid" style="max-height: 50px;">
         <div>
             <a href="student.php" class="btn btn-light btn-sm me-2"><?= t('home') ?></a>
-            <?php if ($_SESSION['role'] === 'delegate'): ?>
-                <a href="delegate.php" class="btn btn-outline-light btn-sm me-2"><?= t('delegate_area') ?></a>
+            <?php if ($_SESSION['role'] === 'ambassador'): ?>
+                <a href="ambassador.php" class="btn btn-outline-light btn-sm me-2"><?= t('ambassador_area') ?></a>
             <?php endif; ?>
             <a href="settings.php" class="btn btn-outline-light btn-sm me-2"><?= t('settings') ?></a>
             <form method="POST" action="logout.php" class="d-inline">

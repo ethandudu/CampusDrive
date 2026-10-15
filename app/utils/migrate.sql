@@ -52,6 +52,11 @@ BEGIN
                 ADD COLUMN IF NOT EXISTS action VARCHAR(255) NOT NULL AFTER user_email,
                 ADD COLUMN IF NOT EXISTS status ENUM('success', 'failure') NOT NULL AFTER action,
                 ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45) NOT NULL AFTER status;
+            ALTER TABLE users
+                MODIFY column role ENUM('admin', 'student', 'ambassador') NOT NULL DEFAULT 'student';
+            UPDATE users
+            SET role = 'ambassador'
+            WHERE role = 'delegate';
         END IF;
     END IF;
 END//
