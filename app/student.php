@@ -34,6 +34,13 @@ if ($promotionRepository->getPromotionStatus($promo_id) == 'pending') {
     exit;
 }
 
+if (isset($_GET['search'])) {
+    $term = trim((string) $_GET['search']);
+    header('Content-Type: application/json');
+    echo json_encode($term === '' ? [] : $fileRepository->searchFiles($term, $promo_id));
+    exit;
+}
+
 if (isset($_GET['folderId'])) {
     $folder_id = ($_GET['folderId']) && $_GET['folderId'] !== 'null' && $_GET['folderId'] !== ''
         ? $_GET['folderId']
@@ -202,6 +209,12 @@ if (!$my_pending_files) {
                     <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadFileModal"><?= t('share_document') ?></button>
                 </div>
                 <div class="card-body p-0">
+                    <div class="p-3">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="searchInput" placeholder="<?= t('search') ?>" name="search">
+                            <button class="btn btn-outline-secondary" type="button" id="searchButton"><?= t('search') ?></button>
+                        </div>
+                    </div>
                     <table class="table table-hover mb-0" id="folderTable">
                         <thead class="table-light">
                         <tr>
@@ -258,6 +271,8 @@ if (!$my_pending_files) {
         'emptyFolder' => t('empty_folder'),
         'root' => t('root'),
         'error' => t('generic_error'),
+        'noResults' => t('no_results'),
+        'searchResults' => t('search_results'),
     ]) ?>;
 
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -350,6 +365,47 @@ if (!$my_pending_files) {
             })
             .catch(error => console.error(labels.error, error));
     }
+
+    function searchFiles(term) {
+        term = term.trim();
+        if (term === '') {
+            const saved = sessionStorage.getItem(folderStorageKey);
+            openFolder(saved && saved !== 'null' ? saved : null);
+            return;
+        }
+
+        fetch(`student.php?search=${encodeURIComponent(term)}`)
+            .then(response => response.json())
+            .then(files => {
+                const rows = files.map(file => `
+                    <tr>
+                        <td>📄 ${escapeHtml(file.original_name)}</td>
+                        <td>${file.created_at ? new Date(file.created_at).toLocaleString(locale) : ''}</td>
+                        <td><a href="view.php?id=${escapeHtml(encodeURIComponent(file.id))}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a></td>
+                    </tr>
+                `);
+                if (!rows.length) {
+                    rows.push(`<tr><td colspan="3" class="text-center text-muted py-3">${labels.noResults}</td></tr>`);
+                }
+                document.querySelector('#folderTable tbody').innerHTML = rows.join('');
+                document.querySelector('#folderHeaderLabel').textContent = labels.searchResults;
+            })
+            .catch(error => console.error(labels.error, error));
+    }
+
+    const searchInput = document.querySelector('#searchInput');
+    document.querySelector('#searchButton').addEventListener('click', () => searchFiles(searchInput.value));
+    searchInput.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            searchFiles(searchInput.value);
+        }
+    });
+    searchInput.addEventListener('input', () => {
+        if (searchInput.value.trim() === '') {
+            searchFiles('');
+        }
+    });
 
     document.querySelector('#folderTable tbody').addEventListener('click', event => {
         const button = event.target.closest('[data-folder-id]');

@@ -129,6 +129,9 @@ function translations(): array
             'invitation_sent' => 'Invitation envoyée avec succès.',
             'announcement_text' => "Message de l'annonce : ",
             'announcement_enabled' => 'Annonce activée',
+            'search' => 'Rechercher',
+            'no_results' => 'Aucun résultat',
+            'search_results' => 'Résultats de recherche'
         ],
         'en' => [
             'login' => 'Sign in', 'email' => 'Email address', 'password' => 'Password',
@@ -243,6 +246,9 @@ function translations(): array
             'invitation_sent' => 'Invitation sent successfully.',
             'announcement_text' => "Announcement message: ",
             'announcement_enabled' => 'Announcement enabled',
+            'search' => 'Search',
+            'no_results' => 'No results',
+            'search_results' => 'Search results'
         ],
     ];
 
