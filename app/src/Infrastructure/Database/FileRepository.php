@@ -21,13 +21,6 @@ final class FileRepository extends DatabaseRepository
         ]);
     }
 
-    public function getPromotionFiles(string $promotion_id): array
-    {
-        $stmt = $this->connection()->prepare("SELECT f.*, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.status = 'approved' ORDER BY f.created_at DESC");
-        $stmt->execute([InputSanitizer::sanitize($promotion_id)]);
-        return $stmt->fetchAll();
-    }
-
     public function getPromotionFolders(string $promotion_id): array
     {
         $stmt = $this->connection()->prepare("SELECT * FROM folders WHERE promotion_id = ? ORDER BY created_at DESC");
