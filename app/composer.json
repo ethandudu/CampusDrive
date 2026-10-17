@@ -8,7 +8,8 @@
         "php": ">=8.5",
         "phpmailer/phpmailer": "^7.1",
       "ext-fileinfo": "*",
-      "ext-pdo": "*"
+      "ext-pdo": "*",
+      "ext-mbstring": "*"
     },
     "config": {
         "optimize-autoloader": true

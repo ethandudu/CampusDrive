@@ -12,6 +12,7 @@ $promotionRepository = new PromotionRepository();
 $fileRepository = new FileRepository();
 require_once 'utils/mail.php';
 require_once 'utils/emailTemplates/promotion_activated.php';
+require_once 'utils/emailTemplates/promotion_rejected.php';
 
 // Check permissions: only admin can access this page
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
@@ -42,6 +43,28 @@ if (isset($_POST['approve_promo_id'])) {
     }
 
     $success = t('promotion_activated');
+}
+
+// reject promotion request
+if (isset($_POST['reject_promo_id'])) {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die(t('security_error'));
+    }
+    $promo_id = $_POST['reject_promo_id'];
+    $reason = mb_substr(trim((string) ($_POST['reject_message'] ?? '')), 0, 1000);
+    $promo_to_reject = $promotionRepository->getPromotionDetails($promo_id);
+
+    if ($promo_to_reject && $promo_to_reject['status'] === 'pending'
+        && $promotionRepository->deletePendingPromotion($promo_id)) {
+        if (!empty($promo_to_reject['created_by'])) {
+            $requester = $userRepository->getUserDetails((string) $promo_to_reject['created_by']);
+            if ($requester && !empty($requester['email'])) {
+                $rejectionEmail = promotionRejectedEmailTemplate($promo_to_reject['name'], $reason);
+                (new Mailer())->sendMail($requester['email'], $rejectionEmail['subject'], $rejectionEmail['body']);
+            }
+        }
+        $success = t('promotion_rejected');
+    }
 }
 
 $promotions = $promotionRepository->getPendingPromotions();
@@ -133,6 +156,27 @@ $promotions = $promotionRepository->getPendingPromotions();
                                         <input type="hidden" name="approve_promo_id" value="<?= $promo['id'] ?>">
                                         <button type="submit" class="btn btn-success btn-sm"><?= t('approve') ?></button>
                                     </form>
+                                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#rejectModal<?= htmlspecialchars($promo['id']) ?>"><?= t('reject') ?></button>
+                                    <div class="modal fade text-start" id="rejectModal<?= htmlspecialchars($promo['id']) ?>" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <form method="POST" class="modal-content">
+                                                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                                <input type="hidden" name="reject_promo_id" value="<?= htmlspecialchars($promo['id']) ?>">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title"><?= t('reject_promotion') ?> : <?= htmlspecialchars($promo['name']) ?></h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <label class="form-label" for="reject_message<?= htmlspecialchars($promo['id']) ?>"><?= t('rejection_message') ?></label>
+                                                    <textarea class="form-control" id="reject_message<?= htmlspecialchars($promo['id']) ?>" name="reject_message" rows="3" maxlength="1000"></textarea>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= t('cancel') ?></button>
+                                                    <button type="submit" class="btn btn-danger"><?= t('reject') ?></button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -143,5 +187,6 @@ $promotions = $promotionRepository->getPendingPromotions();
         </div>
     </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
