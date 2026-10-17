@@ -51,7 +51,7 @@ require_once 'utils/i18n.php';
         <div class="text-center mb-5"><span class="eyebrow">Pourquoi CampusDrive ?</span><h2 class="fw-bold mt-2">Simple, collaboratif et accessible</h2></div>
         <div class="row g-4">
             <div class="col-md-4"><div class="feature-card h-100"><div class="feature-icon">01</div><h3 class="h5">Un espace par promotion</h3><p class="text-secondary mb-0">Retrouvez tous les documents de votre promotion dans une arborescence facile à parcourir.</p></div></div>
-            <div class="col-md-4"><div class="feature-card h-100"><div class="feature-icon">02</div><h3 class="h5">Partage contrôlé</h3><p class="text-secondary mb-0">Les fichiers envoyés sont vérifiés par le délégué avant d'être visibles par le groupe.</p></div></div>
+            <div class="col-md-4"><div class="feature-card h-100"><div class="feature-icon">02</div><h3 class="h5">Partage contrôlé</h3><p class="text-secondary mb-0">Les fichiers envoyés sont vérifiés par le parrain avant d'être visibles par le groupe.</p></div></div>
             <div class="col-md-4"><div class="feature-card h-100"><div class="feature-icon">03</div><h3 class="h5">Gratuit par nature</h3><p class="text-secondary mb-0">CampusDrive est gratuit : pas de publicité intrusive, pas de frais cachés, pas d'abonnement.</p></div></div>
         </div>
     </div></section>
