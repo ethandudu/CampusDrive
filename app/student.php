@@ -171,7 +171,7 @@ if (!$my_pending_files) {
     <?php endif; ?>
     <?php if ($studentAnnouncement !== null): ?>
         <div id="studentAnnouncement" class="alert alert-info alert-dismissible d-none" role="status">
-            <strong><?= t('announcement') ?>:</strong> <?= $studentAnnouncement?>
+            <strong><?= t('ambassador_announcement') ?>:</strong> <?= $studentAnnouncement?>
             <button id="dismissStudentAnnouncement" type="button" class="btn-close" data-bs-dismiss="alert" aria-label="<?= t('close') ?>"></button>
         </div>
     <?php endif; ?>

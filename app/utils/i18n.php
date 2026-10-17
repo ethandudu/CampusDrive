@@ -119,6 +119,7 @@ function translations(): array
             'maintenance_retry' => 'Merci de réessayer dans quelques instants.',
             'remove_student_info' => 'Vous souhaitez retirer un étudiant déjà inscrit ? Envoyez-nous un mail à <a href="mailto:contact@campusdrive.fr">contact@campusdrive.fr</a> en précisant l’adresse e-mail de l’étudiant à retirer.',
             'announcement' => 'Annonce',
+            'ambassador_announcement' => 'Annonce du parrain : ',
             'close' => 'Fermer',
             'registration_waiting_confirmation' => 'Inscription réussie ! Vérifiez votre e-mail pour un lien de confirmation afin d’activer votre compte.',
             'account_not_activated' => 'Votre compte n’est pas encore activé. Veuillez vérifier votre boîte e-mail pour le lien d’activation.',
