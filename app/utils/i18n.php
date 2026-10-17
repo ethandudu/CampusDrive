@@ -237,6 +237,7 @@ function translations(): array
             'maintenance_retry' => 'Please try again in a few moments.',
             'remove_student_info' => 'Do you want to remove a student who is already registered? Send us an email at <a href="mailto:contact@campusdrive.fr">contact@campusdrive.fr</a> specifying the email address of the student to be removed.',
             'announcement' => 'Announcement',
+            'ambassador_announcement' => 'Ambassador announcement: ',
             'close' => 'Close',
             'registration_waiting_confirmation' => 'Registration complete! Check your email for a confirmation link to activate your account.',
             'account_not_activated' => 'Your account is not yet activated. Please check your email inbox for the activation link.',
