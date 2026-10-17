@@ -15,11 +15,11 @@ final class UserRepository extends DatabaseRepository
         if ($this->isEmailRegistered($email)) {
             throw new InvalidArgumentException("Cette adresse email est déjà utilisée.");
         }
-        if (!in_array($role, ['student', 'delegate'], true)) {
+        if (!in_array($role, ['student', 'ambassador'], true)) {
             throw new InvalidArgumentException('Invalid role.');
         }
 
-        if ($role === 'delegate') {
+        if ($role === 'ambassador') {
             $activationToken = bin2hex(random_bytes(16));
         } else {
             $activationToken = null;

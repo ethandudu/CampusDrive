@@ -1,9 +1,11 @@
 <?php
+use CampusDrive\Infrastructure\Database\LogRepository;
 use CampusDrive\Infrastructure\Database\UserRepository;
 
 require_once 'utils/db.php';
 
 $userRepository = new UserRepository();
+$logRepository = new LogRepository();
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 $compose = json_decode(file_get_contents(__DIR__ . '/composer.json'), true);
@@ -57,11 +59,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($user !== null) {
         if (isset($user['error'])) {
+            $logRepository->logLogin(false, null, $_POST['email']);
             header('Location: login.php?error=' . urlencode($user['error']));
             exit;
         }
 
         $user = $user[0];
+        $logRepository->logLogin(true, (string) $user['id'], $user['email'] ?? $_POST['email']);
         startAuthenticatedSession($user);
         $_SESSION['locale'] = in_array($user['language'] ?? null, array_keys(SUPPORTED_LOCALES), true)
             ? $user['language']
@@ -74,6 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     } else {
+        $logRepository->logLogin(false, null, $_POST['email']);
         $error = t('invalid_credentials');
     }
 }

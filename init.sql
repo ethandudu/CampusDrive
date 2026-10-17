@@ -2,7 +2,7 @@ CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT (UUID()),
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'delegate', 'student') NOT NULL DEFAULT 'student',
+    role ENUM('admin', 'ambassador', 'student') NOT NULL DEFAULT 'student',
     language VARCHAR(5) NOT NULL DEFAULT 'fr',
     promotion_id UUID DEFAULT NULL,
     activation_token VARCHAR(64) UNIQUE DEFAULT NULL,
@@ -70,8 +70,10 @@ CREATE TABLE files (
 
 CREATE TABLE logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id UUID NOT NULL,
+    user_id UUID DEFAULT NULL,
+    user_email VARCHAR(255) DEFAULT NULL,
     action VARCHAR(255) NOT NULL,
+    status ENUM('success', 'failure') NOT NULL,
     ip_address VARCHAR(45) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -83,7 +85,7 @@ CREATE TABLE settings (
 );
 
 INSERT INTO settings (setting_key, value)
-VALUES ('db_version', '1.0'), ('announcement_text', 'Bienvenue sur CampusDrive !'), ('announcement_enabled', 'false');
+VALUES ('db_version', '1.1'), ('announcement_text', 'Bienvenue sur CampusDrive !'), ('announcement_enabled', 'false');
 
 INSERT INTO users (email, password, role)
 VALUES ('admin@campusdrive.fr', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');

@@ -24,6 +24,13 @@ final class PromotionRepository extends DatabaseRepository
         return $stmt->execute([InputSanitizer::sanitize($status), $promotion_id]);
     }
 
+    public function deletePendingPromotion(string $promotion_id): bool
+    {
+        $stmt = $this->connection()->prepare("DELETE FROM promotions WHERE id = ? AND status = 'pending'");
+        $stmt->execute([$promotion_id]);
+        return $stmt->rowCount() > 0;
+    }
+
     public function attachUserToPromotion(string $user_id, string $promotion_id): bool
     {
         $stmt = $this->connection()->prepare("UPDATE users SET promotion_id = ? WHERE id = ?");
