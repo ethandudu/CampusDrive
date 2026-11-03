@@ -136,7 +136,7 @@ final class FileRepository extends DatabaseRepository
     {
         $stmt = $this->connection()->prepare("SELECT f.*, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.status = 'pending' ORDER BY f.created_at ");
         $stmt->execute([$promotion_id]);
-        return $stmt->fetchAll();
+        return $this->withPaths($stmt->fetchAll(), $promotion_id, 'folder_id');
     }
 
     public function approvePromotionFile(string $file_id): bool

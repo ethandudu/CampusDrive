@@ -288,6 +288,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                                     <?php foreach ($pending_files as $pf): ?>
                                         <tr>
                                             <td class="align-middle">
+                                                <div class="small text-muted"><?= $pf['path'] ?></div>
                                                 <b><?= htmlspecialchars($pf['original_name']) ?></b>
                                             </td>
                                             <td class="align-middle"><?= htmlspecialchars($pf['uploader_email']) ?></td>
