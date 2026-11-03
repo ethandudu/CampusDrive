@@ -9,7 +9,7 @@ DELIMITER //
 
 CREATE PROCEDURE campusdrive_migrate()
 BEGIN
-    DECLARE current_version VARCHAR(32) DEFAULT NULL;
+    DECLARE current_version TEXT DEFAULT NULL;
     DECLARE current_version_number DECIMAL(10, 2);
 
     SELECT value
