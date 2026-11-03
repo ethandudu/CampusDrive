@@ -132,7 +132,8 @@ function translations(): array
             'announcement_enabled' => 'Annonce activée',
             'search' => 'Rechercher',
             'no_results' => 'Aucun résultat',
-            'search_results' => 'Résultats de recherche'
+            'search_results' => 'Résultats de recherche',
+            'number_of_files' => 'Nombre de fichiers',
         ],
         'en' => [
             'login' => 'Sign in', 'email' => 'Email address', 'password' => 'Password',
@@ -250,7 +251,8 @@ function translations(): array
             'announcement_enabled' => 'Announcement enabled',
             'search' => 'Search',
             'no_results' => 'No results',
-            'search_results' => 'Search results'
+            'search_results' => 'Search results',
+            'number_of_files' => 'Number of files'
         ],
     ];
 

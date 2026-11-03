@@ -49,6 +49,8 @@ final class FileRepository extends DatabaseRepository
                 return true;
             }));
 
+            $rootFolders = $this->withFileCounts($rootFolders);
+
             $filesStmt = $this->connection()->prepare("SELECT f.id, f.created_at, f.folder_id, f.original_name, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.folder_id IS NULL AND f.status = 'approved' ORDER BY f.created_at DESC");
             $filesStmt->execute([$promotion_id]);
             $rootFiles = $filesStmt->fetchAll();
@@ -57,7 +59,7 @@ final class FileRepository extends DatabaseRepository
                 'folder' => null,
                 'parent_folder' => null,
                 'folders' => $rootFolders,
-                'files' => $rootFiles
+                'files' => $rootFiles,
             ];
         }
 
@@ -76,6 +78,7 @@ final class FileRepository extends DatabaseRepository
         $subfolders = array_values(array_filter($allFolders, static function (array $candidate) use ($folder_id): bool {
             return !empty($candidate['parent_id']) && (string) $candidate['parent_id'] === $folder_id;
         }));
+        $subfolders = $this->withFileCounts($subfolders);
 
         $filesStmt = $this->connection()->prepare("SELECT f.id, f.created_at, f.folder_id, f.original_name, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.folder_id = ? AND f.promotion_id = ? AND f.status = 'approved' ORDER BY f.created_at DESC");
         $filesStmt->execute([$folder_id, $promotion_id]);
@@ -182,6 +185,22 @@ final class FileRepository extends DatabaseRepository
     public function getTotalFiles(): int
     {
         $stmt = $this->connection()->query("SELECT COUNT(*) FROM files");
+        return (int) $stmt->fetchColumn();
+    }
+
+    private function withFileCounts(array $folders): array
+    {
+        foreach ($folders as &$folder) {
+            $folder['file_count'] = $this->getFolderTotalFiles((string) $folder['id']);
+        }
+        unset($folder);
+        return $folders;
+    }
+
+    private function getFolderTotalFiles(string $folder_id): int
+    {
+        $stmt = $this->connection()->prepare("SELECT COUNT(*) FROM files WHERE folder_id = ? AND status = 'approved'");
+        $stmt->execute([InputSanitizer::sanitize($folder_id)]);
         return (int) $stmt->fetchColumn();
     }
 

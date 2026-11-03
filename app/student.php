@@ -219,6 +219,7 @@ if (!$my_pending_files) {
                         <thead class="table-light">
                         <tr>
                             <th><?= t('name') ?></th>
+                            <th><?= t('number_of_files') ?></th>
                             <th><?= t('created_at') ?></th>
                             <th><?= t('action') ?></th>
                         </tr>
@@ -320,6 +321,7 @@ if (!$my_pending_files) {
                             </td>
                             <td></td>
                             <td></td>
+                            <td></td>
                         </tr>
                     `);
                 }
@@ -335,6 +337,7 @@ if (!$my_pending_files) {
                                         📁 ${folder.name}
                                     </button>
                                 </td>
+                                <td>${Number(folder.file_count) || 0}</td>
                                 <td>${folder.created_at ? new Date(folder.created_at).toLocaleString(locale) : ''}</td>
                                 <td></td>
                             </tr>
@@ -348,6 +351,7 @@ if (!$my_pending_files) {
                         rows.push(`
                             <tr>
                                 <td>📄 ${escapeHtml(file.original_name)}</td>
+                                <td></td>
                                 <td>${file.created_at ? new Date(file.created_at).toLocaleString(locale) : ''}</td>
                                 <td><a href="view.php?id=${escapeHtml(encodeURIComponent(file.id))}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a></td>
                             </tr>
@@ -356,7 +360,7 @@ if (!$my_pending_files) {
                 }
 
                 if (!hasContent) {
-                    rows.push(`<tr><td colspan="3" class="text-center text-muted py-3">${labels.emptyFolder}</td></tr>`);
+                    rows.push(`<tr><td colspan="4" class="text-center text-muted py-3">${labels.emptyFolder}</td></tr>`);
                 }
 
                 document.querySelector('#folderTable tbody').innerHTML = rows.join('');
@@ -380,12 +384,13 @@ if (!$my_pending_files) {
                 const rows = files.map(file => `
                     <tr>
                         <td>📄 ${escapeHtml(file.original_name)}</td>
+                        <td></td>
                         <td>${file.created_at ? new Date(file.created_at).toLocaleString(locale) : ''}</td>
                         <td><a href="view.php?id=${escapeHtml(encodeURIComponent(file.id))}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a></td>
                     </tr>
                 `);
                 if (!rows.length) {
-                    rows.push(`<tr><td colspan="3" class="text-center text-muted py-3">${labels.noResults}</td></tr>`);
+                    rows.push(`<tr><td colspan="4" class="text-center text-muted py-3">${labels.noResults}</td></tr>`);
                 }
                 document.querySelector('#folderTable tbody').innerHTML = rows.join('');
                 document.querySelector('#folderHeaderLabel').textContent = labels.searchResults;
