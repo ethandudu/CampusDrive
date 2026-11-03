@@ -387,6 +387,7 @@ if (!$my_pending_files) {
                 const rows = folders.map(folder => `
                     <tr>
                         <td>
+                            <div class="small text-muted">${folder.path}</div>
                             <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold" data-folder-id="${escapeHtml(folder.id)}">
                                 📁 ${folder.name}
                             </button>
@@ -398,7 +399,7 @@ if (!$my_pending_files) {
                 `);
                 files.forEach(file => rows.push(`
                     <tr>
-                        <td>📄 ${escapeHtml(file.original_name)}</td>
+                        <td>📄 <div class="small text-muted">${file.path}</div>${escapeHtml(file.original_name)}</td>
                         <td></td>
                         <td>${file.created_at ? new Date(file.created_at).toLocaleString(locale) : ''}</td>
                         <td><a href="view.php?id=${escapeHtml(encodeURIComponent(file.id))}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a></td>
