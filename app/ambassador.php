@@ -38,7 +38,7 @@ $error = '';
 // Only known message keys are translated: the translations may contain trusted HTML,
 // so arbitrary user input must never reach t().
 $allowedErrorKeys = ['invalid_email_domain', 'email_already_invited'];
-$allowedSuccessKeys = ['invitation_deleted', 'file_renamed'];
+$allowedSuccessKeys = ['invitation_deleted', 'file_renamed', 'invitation_sent'];
 
 if (isset($_GET['error']) && is_string($_GET['error']) && in_array($_GET['error'], $allowedErrorKeys, true)) {
     $error = t($_GET['error']);
@@ -102,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
     $invitationEmail = invitationEmailTemplate($promotionForInvite['name'] ?? '', $registerLink);
     new Mailer()->sendMail($_POST['invite_email'], $invitationEmail['subject'], $invitationEmail['body']);
     header('Location: ambassador.php?success=invitation_sent');
+    exit;
 }
 
 // Create new folder
@@ -113,6 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if (!empty($folder_name)) {
         $fileRepository->createFolder($_SESSION['promotion_id'], $parent_id, $folder_name);
     }
+    header('Location: ambassador.php?success=folder_created');
+    exit;
 }
 
 // Delete folder
