@@ -38,7 +38,7 @@ $error = '';
 // Only known message keys are translated: the translations may contain trusted HTML,
 // so arbitrary user input must never reach t().
 $allowedErrorKeys = ['invalid_email_domain', 'email_already_invited'];
-$allowedSuccessKeys = ['invitation_deleted', 'file_renamed'];
+$allowedSuccessKeys = ['invitation_deleted', 'file_renamed', 'invitation_sent'];
 
 if (isset($_GET['error']) && is_string($_GET['error']) && in_array($_GET['error'], $allowedErrorKeys, true)) {
     $error = t($_GET['error']);
@@ -102,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_email'])) {
     $invitationEmail = invitationEmailTemplate($promotionForInvite['name'] ?? '', $registerLink);
     new Mailer()->sendMail($_POST['invite_email'], $invitationEmail['subject'], $invitationEmail['body']);
     header('Location: ambassador.php?success=invitation_sent');
+    exit;
 }
 
 // Create new folder
@@ -113,6 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if (!empty($folder_name)) {
         $fileRepository->createFolder($_SESSION['promotion_id'], $parent_id, $folder_name);
     }
+    header('Location: ambassador.php?success=folder_created');
+    exit;
 }
 
 // Delete folder
@@ -288,6 +291,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                                     <?php foreach ($pending_files as $pf): ?>
                                         <tr>
                                             <td class="align-middle">
+                                                <div class="small text-muted"><?= $pf['path'] ?></div>
                                                 <b><?= htmlspecialchars($pf['original_name']) ?></b>
                                             </td>
                                             <td class="align-middle"><?= htmlspecialchars($pf['uploader_email']) ?></td>
@@ -351,6 +355,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                         <thead class="table-light">
                         <tr>
                             <th><?= t('name') ?></th>
+                            <th><?= t('number_of_files') ?></th>
                             <th><?= t('created_at') ?></th>
                             <th><?= t('action') ?></th>
                         </tr>
@@ -470,6 +475,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                             </td>
                             <td></td>
                             <td></td>
+                            <td></td>
                         </tr>
                     `);
                 }
@@ -485,6 +491,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                                         📁 ${folder.name}
                                     </button>
                                 </td>
+                                <td>${Number(folder.file_count) || 0}</td>
                                 <td>${folder.created_at ? new Date(folder.created_at).toLocaleString(locale) : ''}</td>
                                 <td>
                                     <button class="btn btn-sm btn-outline-danger" data-action="delete-folder" data-id="${escapeHtml(folder.id)}">${labels.delete}</button>
@@ -500,6 +507,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                         rows.push(`
                             <tr>
                                 <td>📄 ${escapeHtml(file.original_name)}</td>
+                                <td></td>
                                 <td>${file.created_at ? new Date(file.created_at).toLocaleString(locale) : ''}</td>
                                 <td><a href="view.php?id=${escapeHtml(encodeURIComponent(file.id))}" target="_blank" class="btn btn-sm btn-outline-info">${labels.view}</a><button class="btn btn-sm btn-outline-warning" data-action="edit-file" data-id="${escapeHtml(file.id)}" data-name="${escapeHtml(file.original_name)}">${labels.edit}</button><button class="btn btn-sm btn-outline-danger" data-action="delete-file" data-id="${escapeHtml(file.id)}">${labels.delete}</button></td>
                             </tr>
@@ -508,7 +516,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                 }
 
                 if (!hasContent) {
-                    rows.push(`<tr><td colspan="3" class="text-center text-muted py-3">${labels.emptyFolder}</td></tr>`);
+                    rows.push(`<tr><td colspan="4" class="text-center text-muted py-3">${labels.emptyFolder}</td></tr>`);
                 }
 
                 document.querySelector('#folderTable tbody').innerHTML = rows.join('');
