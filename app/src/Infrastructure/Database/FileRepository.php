@@ -210,6 +210,13 @@ final class FileRepository extends DatabaseRepository
         $stmt->execute([$promotion_id, '%' . InputSanitizer::sanitize($searchTerm) . '%']);
         return $stmt->fetchAll();
     }
+    public function searchFolders(string $searchTerm, string $promotion_id): array
+    {
+        $stmt = $this->connection()->prepare("SELECT id, parent_id, promotion_id, name, created_at FROM folders WHERE promotion_id = ? AND name LIKE ? ORDER BY name");
+        $stmt->execute([$promotion_id, '%' . InputSanitizer::sanitize($searchTerm) . '%']);
+        return $this->withFileCounts($stmt->fetchAll());
+    }
+
     private function getChildFolderIds(string $folder_id): array
     {
         $stmt = $this->connection()->prepare("SELECT id FROM folders WHERE parent_id = ?");
