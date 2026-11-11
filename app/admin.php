@@ -78,23 +78,16 @@ $promotions = $promotionRepository->getPendingPromotions();
     <link rel="icon" type="image/png" href="assets/favicon.ico">
 </head>
 <body class="bg-light">
-<nav class="navbar navbar-dark bg-dark mb-4 shadow">
-    <div class="container">
-        <span class="navbar-brand mb-0 h1"><?= t('administration') ?></span>
-        <img src="assets/img/campusdrivewhite.webp" alt="Logo" class="img-fluid" style="max-height: 50px;">
-        <div>
-            <a href="settings.php" class="btn btn-outline-light btn-sm me-2"><?= t('settings') ?></a>
-            <form method="POST" action="logout.php" class="d-inline">
-                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                <button type="submit" class="btn btn-outline-light btn-sm"><?= t('logout') ?></button>
-            </form>
-        </div>
-    </div>
-</nav>
+<?php require 'utils/admin_header.php'; ?>
 
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3><?= t('pending_promotions') ?></h3>
+        <div>
+            <a href="admin_users.php" class="btn btn-secondary"><?= t('manage_users') ?></a>
+            <a href="admin_promotions.php" class="btn btn-secondary"><?= t('manage_promotions') ?></a>
+            <a href="admin_settings.php" class="btn btn-secondary"><?= t('global_settings') ?></a>
+        </div>
     </div>
 
     <?php if (isset($success)): ?>
@@ -154,9 +147,9 @@ $promotions = $promotionRepository->getPendingPromotions();
                                     <form method="POST" class="d-inline">
                                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                         <input type="hidden" name="approve_promo_id" value="<?= $promo['id'] ?>">
-                                        <button type="submit" class="btn btn-success btn-sm"><?= t('approve') ?></button>
+                                        <button type="submit" class="btn btn-secondary btn-sm"><?= t('approve') ?></button>
                                     </form>
-                                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#rejectModal<?= htmlspecialchars($promo['id']) ?>"><?= t('reject') ?></button>
+                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#rejectModal<?= htmlspecialchars($promo['id']) ?>"><?= t('reject') ?></button>
                                     <div class="modal fade text-start" id="rejectModal<?= htmlspecialchars($promo['id']) ?>" tabindex="-1" aria-hidden="true">
                                         <div class="modal-dialog">
                                             <form method="POST" class="modal-content">
@@ -172,7 +165,7 @@ $promotions = $promotionRepository->getPendingPromotions();
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= t('cancel') ?></button>
-                                                    <button type="submit" class="btn btn-danger"><?= t('reject') ?></button>
+                                                    <button type="submit" class="btn btn-secondary"><?= t('reject') ?></button>
                                                 </div>
                                             </form>
                                         </div>

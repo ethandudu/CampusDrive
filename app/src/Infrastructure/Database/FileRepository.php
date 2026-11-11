@@ -51,7 +51,7 @@ final class FileRepository extends DatabaseRepository
 
             $rootFolders = $this->withFileCounts($rootFolders);
 
-            $filesStmt = $this->connection()->prepare("SELECT f.id, f.created_at, f.folder_id, f.original_name, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.folder_id IS NULL AND f.status = 'approved' ORDER BY f.created_at DESC");
+            $filesStmt = $this->connection()->prepare("SELECT f.id, f.created_at, f.folder_id, f.original_name, u.email as uploader_email FROM files f LEFT JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.folder_id IS NULL AND f.status = 'approved' ORDER BY f.created_at DESC");
             $filesStmt->execute([$promotion_id]);
             $rootFiles = $filesStmt->fetchAll();
 
@@ -80,7 +80,7 @@ final class FileRepository extends DatabaseRepository
         }));
         $subfolders = $this->withFileCounts($subfolders);
 
-        $filesStmt = $this->connection()->prepare("SELECT f.id, f.created_at, f.folder_id, f.original_name, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.folder_id = ? AND f.promotion_id = ? AND f.status = 'approved' ORDER BY f.created_at DESC");
+        $filesStmt = $this->connection()->prepare("SELECT f.id, f.created_at, f.folder_id, f.original_name, u.email as uploader_email FROM files f LEFT JOIN users u ON f.user_id = u.id WHERE f.folder_id = ? AND f.promotion_id = ? AND f.status = 'approved' ORDER BY f.created_at DESC");
         $filesStmt->execute([$folder_id, $promotion_id]);
         $files = $filesStmt->fetchAll();
 
@@ -134,7 +134,7 @@ final class FileRepository extends DatabaseRepository
 
     public function getPromotionPendingFiles(string $promotion_id): array
     {
-        $stmt = $this->connection()->prepare("SELECT f.*, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.status = 'pending' ORDER BY f.created_at ");
+        $stmt = $this->connection()->prepare("SELECT f.*, u.email as uploader_email FROM files f LEFT JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.status = 'pending' ORDER BY f.created_at ");
         $stmt->execute([$promotion_id]);
         return $this->withPaths($stmt->fetchAll(), $promotion_id, 'folder_id');
     }
@@ -206,7 +206,7 @@ final class FileRepository extends DatabaseRepository
 
     public function searchFiles(string $searchTerm, string $promotion_id): array
     {
-        $stmt = $this->connection()->prepare("SELECT f.id, f.created_at, f.folder_id, f.original_name, u.email as uploader_email FROM files f JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.status = 'approved' AND f.original_name LIKE ? ORDER BY f.created_at DESC");
+        $stmt = $this->connection()->prepare("SELECT f.id, f.created_at, f.folder_id, f.original_name, u.email as uploader_email FROM files f LEFT JOIN users u ON f.user_id = u.id WHERE f.promotion_id = ? AND f.status = 'approved' AND f.original_name LIKE ? ORDER BY f.created_at DESC");
         $stmt->execute([$promotion_id, '%' . InputSanitizer::sanitize($searchTerm) . '%']);
         return $this->withPaths($stmt->fetchAll(), $promotion_id, 'folder_id');
     }

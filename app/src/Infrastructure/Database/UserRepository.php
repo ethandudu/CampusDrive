@@ -41,6 +41,16 @@ final class UserRepository extends DatabaseRepository
         return $stmt->execute([InputSanitizer::sanitize($user_id)]);
     }
 
+    public function deleteUserForAdmin(string $userId, string $adminId): bool
+    {
+        if ($userId === $adminId) {
+            throw new InvalidArgumentException('admin_cannot_delete_self');
+        }
+        $stmt = $this->connection()->prepare('DELETE FROM users WHERE id = ? AND id <> ?');
+        $stmt->execute([$userId, $adminId]);
+        return $stmt->rowCount() === 1;
+    }
+
     public function getUserDetails(string $user_id): ?array
     {
         $stmt = $this->connection()->prepare("SELECT u.*, p.name as promo_name, p.status as promo_status FROM users u LEFT JOIN promotions p ON u.promotion_id = p.id WHERE u.id = ?");
@@ -134,16 +144,26 @@ final class UserRepository extends DatabaseRepository
 
     public function createPasswordResetToken(string $email, string $tokenHash, int $expiresAt): ?string
     {
-        $stmt = $this->connection()->prepare('SELECT id, email FROM users WHERE email = ?');
-        $stmt->execute([InputSanitizer::sanitize($email)]);
-        $user = $stmt->fetch();
+        return $this->createResetToken('email', InputSanitizer::sanitize($email), $tokenHash, $expiresAt);
+    }
 
-        if (!$user) {
-            return null;
-        }
+    public function createPasswordResetTokenForUser(string $userId, string $tokenHash, int $expiresAt): ?string
+    {
+        return $this->createResetToken('id', $userId, $tokenHash, $expiresAt);
+    }
 
+    private function createResetToken(string $column, ?string $value, string $tokenHash, int $expiresAt): ?string
+    {
         $this->connection()->beginTransaction();
         try {
+            $lock = $this->connection()->getAttribute(\PDO::ATTR_DRIVER_NAME) === 'sqlite' ? '' : ' FOR UPDATE';
+            $stmt = $this->connection()->prepare("SELECT id, email FROM users WHERE {$column} = ?" . $lock);
+            $stmt->execute([$value]);
+            $user = $stmt->fetch();
+            if (!$user) {
+                $this->connection()->rollBack();
+                return null;
+            }
             $delete = $this->connection()->prepare('DELETE FROM password_reset_tokens WHERE user_id = ?');
             $delete->execute([$user['id']]);
 
@@ -212,6 +232,81 @@ final class UserRepository extends DatabaseRepository
     {
         $stmt = $this->connection()->query("SELECT COUNT(*) FROM users");
         return (int) $stmt->fetchColumn();
+    }
+
+    public function getAllUsers(): array
+    {
+        return $this->connection()->query(
+            'SELECT u.id, u.email, u.role, u.promotion_id, u.activation_token, p.name AS promo_name
+             FROM users u LEFT JOIN promotions p ON p.id = u.promotion_id ORDER BY u.email'
+        )->fetchAll();
+    }
+
+    public function updateEmail(string $userId, string $email): bool
+    {
+        $email = trim($email);
+        if (strlen($email) > 255 || !InputSanitizer::isValidEmail($email)) {
+            throw new InvalidArgumentException('invalid_admin_email');
+        }
+
+        $connection = $this->connection();
+        $connection->beginTransaction();
+        try {
+            $stmt = $connection->prepare('SELECT email FROM users WHERE id = ? FOR UPDATE');
+            $stmt->execute([$userId]);
+            $oldEmail = $stmt->fetchColumn();
+            if ($oldEmail === false) {
+                throw new InvalidArgumentException('admin_record_missing');
+            }
+            $storedEmail = InputSanitizer::sanitize($email);
+            if ($storedEmail !== $oldEmail) {
+                $stmt = $connection->prepare('UPDATE users SET email = ? WHERE id = ?');
+                $stmt->execute([$storedEmail, $userId]);
+                $stmt = $connection->prepare('DELETE FROM password_reset_tokens WHERE user_id = ?');
+                $stmt->execute([$userId]);
+            }
+            $connection->commit();
+            return true;
+        } catch (\PDOException $e) {
+            $connection->rollBack();
+            if ($e->getCode() === '23000') {
+                throw new InvalidArgumentException('admin_email_taken', 0, $e);
+            }
+            throw $e;
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+            throw $e;
+        }
+    }
+
+    public function updatePromotionForAdmin(string $userId, ?string $promotionId, bool $confirmAmbassadorMove): void
+    {
+        $connection = $this->connection();
+        $connection->beginTransaction();
+        try {
+            if ($promotionId !== null) {
+                $stmt = $connection->prepare('SELECT id FROM promotions WHERE id = ? FOR UPDATE');
+                $stmt->execute([$promotionId]);
+                if ($stmt->fetchColumn() === false) {
+                    throw new InvalidArgumentException('admin_record_missing');
+                }
+            }
+            $stmt = $connection->prepare('SELECT role, promotion_id FROM users WHERE id = ? FOR UPDATE');
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch();
+            if (!$user) {
+                throw new InvalidArgumentException('admin_record_missing');
+            }
+            if ($user['role'] === 'ambassador' && $user['promotion_id'] !== $promotionId && !$confirmAmbassadorMove) {
+                throw new InvalidArgumentException('admin_confirm_ambassador_move');
+            }
+            $stmt = $connection->prepare('UPDATE users SET promotion_id = ? WHERE id = ?');
+            $stmt->execute([$promotionId, $userId]);
+            $connection->commit();
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+            throw $e;
+        }
     }
 
     private function storePasswordHash(string $userId, string $hash): bool

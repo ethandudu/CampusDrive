@@ -294,7 +294,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
                                                 <div class="small text-muted"><?= $pf['path'] ?></div>
                                                 <b><?= htmlspecialchars($pf['original_name']) ?></b>
                                             </td>
-                                            <td class="align-middle"><?= htmlspecialchars($pf['uploader_email']) ?></td>
+                                            <td class="align-middle"><?= htmlspecialchars($pf['uploader_email'] ?? t('deleted_user')) ?></td>
                                             <td class="align-middle">
                                                 <a href="view.php?id=<?= $pf['id'] ?>" target="_blank" class="btn btn-sm btn-outline-info me-2"><?= t('preview') ?></a>
                                                 <form method="POST" class="d-inline">
