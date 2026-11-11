@@ -64,8 +64,8 @@ final class UploadStorage
 
         $directory = $this->directory;
         $path = $directory . DIRECTORY_SEPARATOR . $name;
-        if (is_file($path)) {
-            unlink($path);
+        if (is_file($path) && !unlink($path)) {
+            throw new \RuntimeException('Could not delete uploaded file: ' . $name);
         }
     }
 

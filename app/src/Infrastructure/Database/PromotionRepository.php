@@ -2,6 +2,8 @@
 
 namespace CampusDrive\Infrastructure\Database;
 
+use CampusDrive\Infrastructure\Storage\UploadStorage;
+use InvalidArgumentException;
 use RuntimeException;
 
 final class PromotionRepository extends DatabaseRepository
@@ -56,6 +58,89 @@ final class PromotionRepository extends DatabaseRepository
     {
         $stmt = $this->connection()->query("SELECT * FROM promotions WHERE status = 'pending' ORDER BY created_at DESC");
         return $stmt->fetchAll();
+    }
+
+    public function getAllPromotions(): array
+    {
+        return $this->connection()->query('SELECT id, name, status FROM promotions ORDER BY name, id')->fetchAll();
+    }
+
+    public function renameForAdmin(string $promotionId, string $name): void
+    {
+        $name = trim($name);
+        $storedName = InputSanitizer::sanitize($name);
+        if ($storedName === null || mb_strlen($storedName) > 255 || preg_match('/[\x00-\x1F\x7F]/', $name)) {
+            throw new InvalidArgumentException('admin_invalid_promotion_name');
+        }
+        $stmt = $this->connection()->prepare('UPDATE promotions SET name = ? WHERE id = ?');
+        $stmt->execute([$storedName, $promotionId]);
+        if ($stmt->rowCount() === 0 && $this->getPromotionDetails($promotionId) === null) {
+            throw new InvalidArgumentException('admin_record_missing');
+        }
+    }
+
+    public function replaceAmbassador(string $promotionId, ?string $oldUserId, string $newUserId): void
+    {
+        $connection = $this->connection();
+        $connection->beginTransaction();
+        try {
+            $stmt = $connection->prepare('SELECT id FROM promotions WHERE id = ? FOR UPDATE');
+            $stmt->execute([$promotionId]);
+            if ($stmt->fetchColumn() === false) {
+                throw new InvalidArgumentException('admin_record_missing');
+            }
+            $stmt = $connection->prepare('SELECT id, role, promotion_id, activation_token FROM users WHERE id IN (?, ?) ORDER BY id FOR UPDATE');
+            $stmt->execute([$oldUserId ?? $newUserId, $newUserId]);
+            $rows = [];
+            foreach ($stmt->fetchAll() as $row) {
+                $rows[(string) $row['id']] = $row;
+            }
+            $old = $oldUserId === null ? null : ($rows[$oldUserId] ?? null);
+            $new = $rows[$newUserId] ?? null;
+            if (($oldUserId !== null && (!$old || $old['role'] !== 'ambassador' || $old['promotion_id'] !== $promotionId))
+                || !$new || $new['role'] !== 'student' || $new['promotion_id'] !== $promotionId || $new['activation_token'] !== null) {
+                throw new InvalidArgumentException('admin_invalid_ambassador');
+            }
+            if ($old !== null) {
+                $stmt = $connection->prepare("UPDATE users SET role = 'student' WHERE id = ?");
+                $stmt->execute([$oldUserId]);
+            }
+            $stmt = $connection->prepare("UPDATE users SET role = 'ambassador' WHERE id = ?");
+            $stmt->execute([$newUserId]);
+            $connection->commit();
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+            throw $e;
+        }
+    }
+
+    public function deleteForAdmin(string $promotionId, ?UploadStorage $storage = null): void
+    {
+        $connection = $this->connection();
+        $connection->beginTransaction();
+        try {
+            $stmt = $connection->prepare('SELECT id FROM promotions WHERE id = ? FOR UPDATE');
+            $stmt->execute([$promotionId]);
+            if ($stmt->fetchColumn() === false) {
+                throw new InvalidArgumentException('admin_record_missing');
+            }
+            $stmt = $connection->prepare('SELECT file_path FROM files WHERE promotion_id = ? FOR UPDATE');
+            $stmt->execute([$promotionId]);
+            $storage ??= new UploadStorage();
+            $paths = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+            if ($paths && (!is_dir($storage->directory()) || !is_readable($storage->directory()))) {
+                throw new RuntimeException('Upload directory is unavailable.');
+            }
+            foreach ($paths as $path) {
+                $storage->delete((string) $path);
+            }
+            $stmt = $connection->prepare('DELETE FROM promotions WHERE id = ?');
+            $stmt->execute([$promotionId]);
+            $connection->commit();
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+            throw $e;
+        }
     }
 
     public function getTotalPromotions(): int
