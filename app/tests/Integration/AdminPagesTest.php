@@ -189,4 +189,59 @@ final class AdminPagesTest extends TestCase
         $stmt->execute([$this->promotionId]);
         $this->assertFalse($stmt->fetchColumn());
     }
+
+    public function testGlobalAnnouncementSettingsAndStudentDisplay(): void
+    {
+        [, $adminEmail] = $this->createUser('admin');
+        [$studentId, $studentEmail] = $this->createUser('student');
+        $this->promotionId = $this->db->query('SELECT UUID()')->fetchColumn();
+        $stmt = $this->db->prepare("INSERT INTO promotions (id, name, status) VALUES (?, 'Announcement test', 'active')");
+        $stmt->execute([$this->promotionId]);
+        $stmt = $this->db->prepare('UPDATE users SET promotion_id = ? WHERE id = ?');
+        $stmt->execute([$this->promotionId, $studentId]);
+        $savedSettings = $this->db->query("SELECT setting_key, value FROM settings WHERE setting_key IN ('announcement_text', 'announcement_enabled')")->fetchAll(PDO::FETCH_KEY_PAIR);
+
+        try {
+            [$headers] = $this->request('admin_settings.php');
+            $this->assertContains('Location: login.php', $headers);
+            $this->login($studentEmail);
+            [$headers] = $this->request('admin_settings.php', ['announcement_text' => 'unauthorized', 'announcement_enabled' => '1']);
+            $this->assertContains('Location: login.php', $headers);
+            $this->cookie = '';
+            $this->login($adminEmail);
+            [$headers] = $this->request('admin_settings.php', ['announcement_text' => 'invalid', 'announcement_enabled' => '1']);
+            $this->assertStringContainsString('400', $headers[0]);
+            [, $settingsPage] = $this->request('admin_settings.php');
+            preg_match('/name="csrf_token" value="([^"]+)"/', $settingsPage, $match);
+            $this->assertNotEmpty($match[1] ?? null);
+            $csrf = $match[1];
+            $announcement = '<script>alert("test")</script> & hello';
+            [$headers] = $this->request('admin_settings.php', ['csrf_token' => $csrf, 'announcement_text' => $announcement, 'announcement_enabled' => '1']);
+            $this->assertContains('Location: admin_settings.php?success=1', $headers);
+            [, $settingsPage] = $this->request('admin_settings.php');
+            $this->assertStringContainsString('&lt;script&gt;alert(&quot;test&quot;)&lt;/script&gt; &amp; hello', $settingsPage);
+            $this->assertMatchesRegularExpression('/id="announcement-enabled"[^>]*checked/', $settingsPage);
+            $this->cookie = '';
+            $this->login($studentEmail);
+            [, $studentPage] = $this->request('student.php');
+            $this->assertStringContainsString('&lt;script&gt;alert(&quot;test&quot;)&lt;/script&gt; &amp; hello', $studentPage);
+            $this->assertStringNotContainsString('<script>alert("test")</script>', $studentPage);
+            $this->cookie = '';
+            $this->login($adminEmail);
+            [, $settingsPage] = $this->request('admin_settings.php');
+            preg_match('/name="csrf_token" value="([^"]+)"/', $settingsPage, $match);
+            [$headers] = $this->request('admin_settings.php', ['csrf_token' => $match[1], 'announcement_text' => $announcement, 'announcement_enabled' => '0']);
+            $this->assertContains('Location: admin_settings.php?success=1', $headers);
+            $this->cookie = '';
+            $this->login($studentEmail);
+            [, $studentPage] = $this->request('student.php');
+            $this->assertStringNotContainsString('id="announcement"', $studentPage);
+        } finally {
+            $this->db->exec("DELETE FROM settings WHERE setting_key IN ('announcement_text', 'announcement_enabled')");
+            $stmt = $this->db->prepare('INSERT INTO settings (setting_key, value) VALUES (?, ?)');
+            foreach ($savedSettings as $key => $value) {
+                $stmt->execute([$key, $value]);
+            }
+        }
+    }
 }

@@ -19,6 +19,11 @@ function translations(): array
     static $translations = [
         'fr' => [
             'manage_users' => 'Gérer les utilisateurs', 'manage_promotions' => 'Gérer les promotions',
+            'global_settings' => 'Paramètres du site',
+            'global_announcement' => 'Annonce générale',
+            'global_announcement_help' => 'Cette annonce apparaît dans l’espace des utilisateurs rattachés à une promotion active. Le texte est affiché sans mise en forme HTML.',
+            'global_settings_saved' => 'Paramètres du site enregistrés.',
+            'announcement_too_long' => 'Le message est trop long.',
             'admin_search_users' => 'Rechercher par e-mail, rôle ou promotion', 'admin_clear_search' => 'Effacer',
             'admin_change_email' => 'Modifier l’e-mail', 'admin_change_promotion' => 'Modifier la promotion',
             'admin_search_promotions' => 'Rechercher par nom, statut ou parrain',
@@ -166,6 +171,11 @@ function translations(): array
         ],
         'en' => [
             'manage_users' => 'Manage users', 'manage_promotions' => 'Manage promotions',
+            'global_settings' => 'Site settings',
+            'global_announcement' => 'Global announcement',
+            'global_announcement_help' => 'This announcement appears in the workspace of users assigned to an active promotion. The text is displayed without HTML formatting.',
+            'global_settings_saved' => 'Site settings saved.',
+            'announcement_too_long' => 'The announcement is too long.',
             'admin_search_users' => 'Search by email, role or promotion', 'admin_clear_search' => 'Clear',
             'admin_change_email' => 'Change email', 'admin_change_promotion' => 'Change promotion',
             'admin_search_promotions' => 'Search by name, status or ambassador',

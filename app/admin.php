@@ -86,6 +86,7 @@ $promotions = $promotionRepository->getPendingPromotions();
         <div>
             <a href="admin_users.php" class="btn btn-secondary"><?= t('manage_users') ?></a>
             <a href="admin_promotions.php" class="btn btn-secondary"><?= t('manage_promotions') ?></a>
+            <a href="admin_settings.php" class="btn btn-secondary"><?= t('global_settings') ?></a>
         </div>
     </div>
 
