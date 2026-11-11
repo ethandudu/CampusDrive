@@ -2,6 +2,8 @@
 use CampusDrive\Infrastructure\Database\FileRepository;
 use CampusDrive\Infrastructure\Database\PromotionRepository;
 use CampusDrive\Infrastructure\Database\SettingsRepository;
+use CampusDrive\Infrastructure\Security\ClamAvScanner;
+use CampusDrive\Infrastructure\Storage\ScannedUpload;
 use CampusDrive\Infrastructure\Storage\UploadStorage;
 
 require_once 'utils/db.php';
@@ -94,31 +96,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
         $mime_type = finfo_file($finfo, $file['tmp_name']);
 
         if (array_key_exists($mime_type, $allowed_types)) {
-            $ext = $allowed_types[$mime_type];
-            $storage = new UploadStorage();
-            $stored_name = $storage->generateName($ext);
-
-            if ($storage->prepareDirectory() && move_uploaded_file($file['tmp_name'], $storage->pathFor($stored_name))) {
-                $recordCreated = false;
-                try {
-                    $recordCreated = $fileRepository->createFileRecord(
+            try {
+                $scanner = ClamAvScanner::fromEnvironment();
+            } catch (RuntimeException $exception) {
+                error_log('Upload antivirus configuration failed: ' . $exception->getMessage());
+                $scanner = null;
+            }
+            if ($scanner === null) {
+                $result = 'scan_error';
+            } else {
+                $upload = new ScannedUpload($scanner, new UploadStorage());
+                $result = $upload->save(
+                    $file['tmp_name'],
+                    $allowed_types[$mime_type],
+                    fn (string $stored_name): bool => $fileRepository->createFileRecord(
                         $user_id,
                         $promo_id,
                         $display_name,
                         $stored_name,
                         $mime_type,
                         $folder_id
-                    );
-                    if ($recordCreated) {
-                        $message = t('file_uploaded');
-                    } else {
-                        $error = t('file_save_error');
-                    }
-                } finally {
-                    if (!$recordCreated) {
-                        $storage->delete($stored_name);
-                    }
-                }
+                    )
+                );
+            }
+            if ($result === 'uploaded') {
+                $message = t('file_uploaded');
+            } elseif ($result === 'flagged') {
+                $error = t('file_scan_flagged');
+            } elseif ($result === 'scan_error') {
+                $error = t('file_scan_error');
             } else {
                 $error = t('file_save_error');
             }
