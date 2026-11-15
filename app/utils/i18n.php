@@ -173,7 +173,7 @@ function translations(): array
             'search' => 'Rechercher',
             'no_results' => 'Aucun résultat',
             'search_results' => 'Résultats de recherche',
-            'number_of_files' => 'Nombre de fichiers',
+            'number_of_files' => 'Nombre d\'éléments',
         ],
         'en' => [
             'admin_logs' => 'Logs', 'admin_logs_search' => 'Search by email, IP or user ID',
@@ -332,7 +332,7 @@ function translations(): array
             'search' => 'Search',
             'no_results' => 'No results',
             'search_results' => 'Search results',
-            'number_of_files' => 'Number of files'
+            'number_of_files' => 'Number of items'
         ],
     ];
 
