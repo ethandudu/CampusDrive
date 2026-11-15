@@ -76,7 +76,7 @@ CREATE TABLE logs (
     status ENUM('success', 'failure') NOT NULL,
     ip_address VARCHAR(45) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE settings (
@@ -85,7 +85,7 @@ CREATE TABLE settings (
 );
 
 INSERT INTO settings (setting_key, value)
-VALUES ('db_version', '1.1'), ('announcement_text', 'Bienvenue sur CampusDrive !'), ('announcement_enabled', 'false');
+VALUES ('db_version', '2'), ('announcement_text', 'Bienvenue sur CampusDrive !'), ('announcement_enabled', 'false');
 
 INSERT INTO users (email, password, role)
 VALUES ('admin@campusdrive.fr', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
