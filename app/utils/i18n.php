@@ -18,6 +18,12 @@ function translations(): array
 {
     static $translations = [
         'fr' => [
+            'admin_logs' => 'Journaux', 'admin_logs_search' => 'Rechercher par e-mail, IP ou identifiant',
+            'admin_logs_all_actions' => 'Toutes les actions', 'admin_logs_all_statuses' => 'Tous les statuts',
+            'admin_logs_success' => 'Succès', 'admin_logs_failure' => 'Échec', 'admin_logs_date' => 'Date',
+            'admin_logs_ip' => 'Adresse IP', 'admin_logs_none' => 'Aucun journal trouvé.',
+            'admin_logs_total' => '%count% entrée(s)', 'admin_logs_page' => 'Page %page% sur %pages%',
+            'admin_logs_previous' => 'Précédent', 'admin_logs_next' => 'Suivant', 'admin_logs_reset' => 'Réinitialiser',
             'manage_users' => 'Gérer les utilisateurs', 'manage_promotions' => 'Gérer les promotions',
             'global_settings' => 'Paramètres du site',
             'global_announcement' => 'Annonce générale',
@@ -170,6 +176,12 @@ function translations(): array
             'number_of_files' => 'Nombre de fichiers',
         ],
         'en' => [
+            'admin_logs' => 'Logs', 'admin_logs_search' => 'Search by email, IP or user ID',
+            'admin_logs_all_actions' => 'All actions', 'admin_logs_all_statuses' => 'All statuses',
+            'admin_logs_success' => 'Success', 'admin_logs_failure' => 'Failure', 'admin_logs_date' => 'Date',
+            'admin_logs_ip' => 'IP address', 'admin_logs_none' => 'No logs found.',
+            'admin_logs_total' => '%count% entries', 'admin_logs_page' => 'Page %page% of %pages%',
+            'admin_logs_previous' => 'Previous', 'admin_logs_next' => 'Next', 'admin_logs_reset' => 'Reset',
             'manage_users' => 'Manage users', 'manage_promotions' => 'Manage promotions',
             'global_settings' => 'Site settings',
             'global_announcement' => 'Global announcement',
