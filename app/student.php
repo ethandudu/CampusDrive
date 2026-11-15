@@ -1,5 +1,6 @@
 <?php
 use CampusDrive\Infrastructure\Database\FileRepository;
+use CampusDrive\Infrastructure\Database\LogRepository;
 use CampusDrive\Infrastructure\Database\PromotionRepository;
 use CampusDrive\Infrastructure\Database\SettingsRepository;
 use CampusDrive\Infrastructure\Security\ClamAvScanner;
@@ -119,6 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
                     )
                 );
             }
+            (new LogRepository())->logFileUpload($result === 'uploaded', (string) $user_id);
             if ($result === 'uploaded') {
                 $message = t('file_uploaded');
             } elseif ($result === 'flagged') {
@@ -129,9 +131,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
                 $error = t('file_save_error');
             }
         } else {
+            (new LogRepository())->logFileUpload(false, (string) $user_id);
             $error = t('file_type_error');
         }
     } else {
+        (new LogRepository())->logFileUpload(false, (string) $user_id);
         $error = t('file_upload_error');
     }
 }

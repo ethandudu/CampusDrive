@@ -1,6 +1,5 @@
 <?php
 use CampusDrive\Infrastructure\Database\LogRepository;
-use CampusDrive\Infrastructure\Database\UserRepository;
 
 require_once 'utils/db.php';
 require_once 'utils/session.php';
@@ -20,11 +19,7 @@ function adminLogEscape(string $value): string { return htmlspecialchars($value,
 
 $logs = new LogRepository();
 // GDPR accountability: record every consultation of the logs, before reading them.
-$accessor = (new UserRepository())->getUserDetails((string) $_SESSION['user_id']);
-$logs->logLogsAccess(
-    (string) $_SESSION['user_id'],
-    isset($accessor['email']) ? html_entity_decode($accessor['email'], ENT_QUOTES, 'UTF-8') : null
-);
+$logs->logLogsAccess((string) $_SESSION['user_id']);
 $filters = [
     'search' => isset($_GET['q']) && is_string($_GET['q']) ? mb_substr(trim($_GET['q']), 0, 255) : '',
     'action' => isset($_GET['action']) && is_string($_GET['action']) ? trim($_GET['action']) : '',

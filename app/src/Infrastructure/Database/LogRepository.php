@@ -52,7 +52,8 @@ final class LogRepository extends DatabaseRepository
     {
         [$where, $params] = $this->buildFilter($filters);
         $stmt = $this->connection()->prepare(
-            "SELECT id, user_id, user_email, action, status, ip_address, created_at FROM logs $where ORDER BY created_at DESC, id DESC LIMIT ?, ?"
+            "SELECT l.id, l.user_id, COALESCE(u.email, l.user_email) AS user_email, l.action, l.status, l.ip_address, l.created_at
+             FROM logs l LEFT JOIN users u ON u.id = l.user_id $where ORDER BY l.created_at DESC, l.id DESC LIMIT ?, ?"
         );
         $i = 1;
         foreach ($params as $param) {
@@ -70,7 +71,7 @@ final class LogRepository extends DatabaseRepository
     public function countLogs(array $filters = []): int
     {
         [$where, $params] = $this->buildFilter($filters);
-        $stmt = $this->connection()->prepare("SELECT COUNT(*) FROM logs $where");
+        $stmt = $this->connection()->prepare("SELECT COUNT(*) FROM logs l LEFT JOIN users u ON u.id = l.user_id $where");
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
     }
@@ -87,15 +88,15 @@ final class LogRepository extends DatabaseRepository
         $params = [];
         if (($filters['search'] ?? '') !== '') {
             $like = '%' . addcslashes($filters['search'], '\\%_') . '%';
-            $conditions[] = '(user_email LIKE ? OR ip_address LIKE ? OR user_id LIKE ?)';
-            array_push($params, $like, $like, $like);
+            $conditions[] = '(u.email LIKE ? OR l.user_email LIKE ? OR l.ip_address LIKE ? OR l.user_id LIKE ?)';
+            array_push($params, $like, $like, $like, $like);
         }
         if (($filters['action'] ?? '') !== '') {
-            $conditions[] = 'action = ?';
+            $conditions[] = 'l.action = ?';
             $params[] = $filters['action'];
         }
         if (in_array($filters['status'] ?? '', [self::STATUS_SUCCESS, self::STATUS_FAILURE], true)) {
-            $conditions[] = 'status = ?';
+            $conditions[] = 'l.status = ?';
             $params[] = $filters['status'];
         }
         return [$conditions ? 'WHERE ' . implode(' AND ', $conditions) : '', $params];
@@ -111,9 +112,9 @@ final class LogRepository extends DatabaseRepository
         $this->log(self::ACTION_REGISTER, $success, null, $userEmail);
     }
 
-    public function logLogout(?string $userId, ?string $userEmail): void
+    public function logLogout(?string $userId): void
     {
-        $this->log('logout', true, $userId, $userEmail);
+        $this->log('logout', true, $userId);
     }
 
     public function logPasswordResetRequest(?string $userEmail): void
@@ -121,19 +122,24 @@ final class LogRepository extends DatabaseRepository
         $this->log('password_reset_request', true, null, $userEmail);
     }
 
-    public function logPasswordReset(?string $userId, ?string $userEmail): void
+    public function logPasswordReset(?string $userId): void
     {
-        $this->log('password_reset', true, $userId, $userEmail);
+        $this->log('password_reset', true, $userId);
     }
 
-    public function logLogsAccess(?string $userId, ?string $userEmail): void
+    public function logLogsAccess(?string $userId): void
     {
-        $this->log(self::ACTION_LOGS_ACCESS, true, $userId, $userEmail);
+        $this->log(self::ACTION_LOGS_ACCESS, true, $userId);
     }
 
-    public function logFileUpload(bool $success, ?string $userId, ?string $userEmail): void
+    public function logFileUpload(bool $success, ?string $userId): void
     {
-        $this->log('file_upload', $success, $userId, $userEmail);
+        $this->log('file_upload', $success, $userId);
+    }
+
+    public function logInvitationSent(bool $success, ?string $userId, ?string $userEmail): void
+    {
+        $this->log('invitation_sent', $success, $userId, $userEmail);
     }
 }
 

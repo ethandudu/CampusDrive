@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $role = $invitation['role'] ?? 'student';
             }
             $user = $userRepository->createUser($email, $password, $promo_id, $role);
-            $logRepository->logRegister($user[0] == 1, $email);
+            $logRepository->logRegister($user[0] == 1, html_entity_decode($email, ENT_QUOTES, 'UTF-8'));
             if ($user[0] == 1) {
                 if ($role === 'student') {
                     $invitationRepository->markInvitationAsUsed($token);
@@ -126,11 +126,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
         } catch (\InvalidArgumentException $e) {
-            $logRepository->logRegister(false, $email);
+            $logRepository->logRegister(false, html_entity_decode($email, ENT_QUOTES, 'UTF-8'));
             $error = $e->getMessage();
         }
     } else {
-        $logRepository->logRegister(false, $email);
+        $logRepository->logRegister(false, html_entity_decode($email, ENT_QUOTES, 'UTF-8'));
     }
 }
 ?>
