@@ -90,7 +90,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
             'image/png'       => 'png',
             'image/gif'       => 'gif',
             'video/mp4'       => 'mp4',
-            'video/webm'      => 'webm'
+            'video/webm'      => 'webm',
+            'application/msword' => 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'application/vnd.ms-excel' => 'xls',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+            'application/vnd.ms-powerpoint' => 'ppt',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
         ];
 
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
