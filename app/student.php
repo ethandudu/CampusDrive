@@ -298,6 +298,11 @@ if (!$my_pending_files) {
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
     }[char]));
+    const decodeHtmlEntities = value => {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = String(value ?? '');
+        return textarea.value;
+    };
 
     const announcementElement = document.querySelector('#announcement');
     const studentAnnouncementElement = document.querySelector('#studentAnnouncement');
@@ -384,7 +389,7 @@ if (!$my_pending_files) {
 
                 document.querySelector('#folderTable tbody').innerHTML = rows.join('');
                 document.querySelector('#folderHeaderLabel').textContent =
-                    currentFolder ? currentFolder.name : labels.root;
+                    currentFolder ? decodeHtmlEntities(currentFolder.name) : labels.root;
             })
             .catch(error => console.error(labels.error, error));
     }

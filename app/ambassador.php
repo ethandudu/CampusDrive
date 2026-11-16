@@ -455,6 +455,11 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
     }[char]));
+    const decodeHtmlEntities = value => {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = String(value ?? '');
+        return textarea.value;
+    };
 
     function openFolder(folderId) {
         fetch(`ambassador.php?folderId=${encodeURIComponent(folderId)}`)
@@ -521,7 +526,10 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
 
                 document.querySelector('#folderTable tbody').innerHTML = rows.join('');
                 let button = document.querySelector('#folderHeader button');
-                button.textContent = labels.createFolderIn.replace('%name%', currentFolder ? currentFolder.name : labels.root);
+                button.textContent = labels.createFolderIn.replace(
+                    '%name%',
+                    currentFolder ? decodeHtmlEntities(currentFolder.name) : labels.root
+                );
                 document.querySelector('#createFolderForm input[name="parent_id"]').value = folderId ?? 'null';
             })
             .catch(error => console.error(labels.error, error));
