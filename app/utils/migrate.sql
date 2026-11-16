@@ -29,7 +29,7 @@ BEGIN
         SET current_version_number = CAST(current_version AS DECIMAL(10, 2));
     END IF;
 
-    IF current_version_number > 1.1 THEN
+    IF current_version_number > 2 THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Database version is newer than this migration script.';
     END IF;
@@ -65,6 +65,32 @@ BEGIN
             MODIFY COLUMN role ENUM('admin', 'ambassador', 'student') NOT NULL DEFAULT 'student';
         UPDATE settings
         SET value = '1.1'
+        WHERE setting_key = 'db_version';
+        SET current_version_number = 1.1;
+    END IF;
+
+    IF current_version_number < 2 THEN
+        -- Keep log lines when a user is deleted: replace ON DELETE CASCADE with SET NULL.
+        SET @logs_fk = (
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.REFERENTIAL_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'logs'
+              AND REFERENCED_TABLE_NAME = 'users'
+            LIMIT 1
+        );
+        IF @logs_fk IS NOT NULL THEN
+            SET @drop_fk = CONCAT('ALTER TABLE logs DROP FOREIGN KEY `', @logs_fk, '`');
+            PREPARE drop_fk_stmt FROM @drop_fk;
+            EXECUTE drop_fk_stmt;
+            DEALLOCATE PREPARE drop_fk_stmt;
+        END IF;
+        ALTER TABLE logs
+            ADD CONSTRAINT logs_user_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+        ALTER TABLE files
+            MODIFY COLUMN file_type VARCHAR(255) NOT NULL;
+        UPDATE settings
+        SET value = '2'
         WHERE setting_key = 'db_version';
     END IF;
 END//

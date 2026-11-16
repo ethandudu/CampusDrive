@@ -38,7 +38,8 @@ final class UserRepository extends DatabaseRepository
     public function deleteUser(string $user_id): bool
     {
         $stmt = $this->connection()->prepare("DELETE FROM users WHERE id = ?");
-        return $stmt->execute([InputSanitizer::sanitize($user_id)]);
+        $userId = InputSanitizer::sanitize($user_id);
+        return $this->preserveLogEmails($userId, static fn() => $stmt->execute([$userId]));
     }
 
     public function deleteUserForAdmin(string $userId, string $adminId): bool
@@ -47,8 +48,31 @@ final class UserRepository extends DatabaseRepository
             throw new InvalidArgumentException('admin_cannot_delete_self');
         }
         $stmt = $this->connection()->prepare('DELETE FROM users WHERE id = ? AND id <> ?');
-        $stmt->execute([$userId, $adminId]);
-        return $stmt->rowCount() === 1;
+        return $this->preserveLogEmails($userId, static function () use ($stmt, $userId, $adminId): bool {
+            $stmt->execute([$userId, $adminId]);
+            return $stmt->rowCount() === 1;
+        });
+    }
+
+    /**
+     * Copies the user's email onto their log lines, then runs the deletion; the logs.user_id
+     * foreign key is SET NULL so the lines survive and stay attributable.
+     */
+    private function preserveLogEmails(string $userId, callable $delete): bool
+    {
+        $connection = $this->connection();
+        $connection->beginTransaction();
+        try {
+            $connection->prepare(
+                'UPDATE logs SET user_email = (SELECT email FROM users WHERE id = ?) WHERE user_id = ?'
+            )->execute([$userId, $userId]);
+            $deleted = $delete();
+            $connection->commit();
+            return $deleted;
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+            throw $e;
+        }
     }
 
     public function getUserDetails(string $user_id): ?array
@@ -180,7 +204,7 @@ final class UserRepository extends DatabaseRepository
         return (string) $user['email'];
     }
 
-    public function resetPasswordWithToken(string $tokenHash, string $newPassword): bool
+    public function resetPasswordWithToken(string $tokenHash, string $newPassword, ?string &$resetUserId = null): bool
     {
         $connection = $this->connection();
         $connection->beginTransaction();
@@ -211,6 +235,7 @@ final class UserRepository extends DatabaseRepository
             $deleteOthers = $connection->prepare('DELETE FROM password_reset_tokens WHERE user_id = ?');
             $deleteOthers->execute([$userId]);
             $connection->commit();
+            $resetUserId = (string) $userId;
 
             return true;
         } catch (\Throwable $e) {

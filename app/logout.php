@@ -1,4 +1,7 @@
 <?php
+use CampusDrive\Infrastructure\Database\LogRepository;
+
+require_once 'utils/db.php';
 require_once 'utils/session.php';
 require_once 'utils/i18n.php';
 
@@ -11,6 +14,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die(t('security_error'));
     }
 
+    if (isset($_SESSION['user_id'])) {
+        (new LogRepository())->logLogout((string) $_SESSION['user_id']);
+    }
     destroySession();
 }
 

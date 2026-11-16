@@ -1,5 +1,6 @@
 <?php
 
+use CampusDrive\Infrastructure\Database\LogRepository;
 use CampusDrive\Infrastructure\Database\UserRepository;
 use CampusDrive\Infrastructure\Security\PasswordPolicy;
 
@@ -40,9 +41,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = t('password_mismatch');
     } elseif (($passwordViolation = PasswordPolicy::violation($password)) !== null) {
         $error = t($passwordViolation);
-    } elseif (!(new UserRepository())->resetPasswordWithToken(hash('sha256', $token), $password)) {
+    } elseif (!(new UserRepository())->resetPasswordWithToken(hash('sha256', $token), $password, $resetUserId)) {
+        (new LogRepository())->log('password_reset', false);
         $error = t('password_reset_invalid');
     } else {
+        (new LogRepository())->logPasswordReset($resetUserId);
         header('Location: reset_password.php?success=1');
         exit;
     }

@@ -199,8 +199,9 @@ final class FileRepository extends DatabaseRepository
 
     private function getFolderTotalFiles(string $folder_id): int
     {
-        $stmt = $this->connection()->prepare("SELECT COUNT(*) FROM files WHERE folder_id = ? AND status = 'approved'");
-        $stmt->execute([InputSanitizer::sanitize($folder_id)]);
+        $id = InputSanitizer::sanitize($folder_id);
+        $stmt = $this->connection()->prepare("SELECT (SELECT COUNT(*) FROM files WHERE folder_id = ? AND status = 'approved') + (SELECT COUNT(*) FROM folders WHERE parent_id = ?)");
+        $stmt->execute([$id, $id]);
         return (int) $stmt->fetchColumn();
     }
 

@@ -1,5 +1,6 @@
 <?php
 
+use CampusDrive\Infrastructure\Database\LogRepository;
 use CampusDrive\Infrastructure\Database\UserRepository;
 
 require_once 'utils/db.php';
@@ -33,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             time() + 3600
         );
 
+        (new LogRepository())->logPasswordResetRequest($email);
         if ($accountEmail !== null) {
             $resetLink = rtrim(APP_BASE_URL, '/') . '/reset_password.php?token=' . urlencode($token);
             $emailTemplate = passwordResetEmailTemplate($resetLink);

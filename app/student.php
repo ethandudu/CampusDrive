@@ -1,5 +1,6 @@
 <?php
 use CampusDrive\Infrastructure\Database\FileRepository;
+use CampusDrive\Infrastructure\Database\LogRepository;
 use CampusDrive\Infrastructure\Database\PromotionRepository;
 use CampusDrive\Infrastructure\Database\SettingsRepository;
 use CampusDrive\Infrastructure\Security\ClamAvScanner;
@@ -89,7 +90,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
             'image/png'       => 'png',
             'image/gif'       => 'gif',
             'video/mp4'       => 'mp4',
-            'video/webm'      => 'webm'
+            'video/webm'      => 'webm',
+            'application/msword' => 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'application/vnd.ms-excel' => 'xls',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+            'application/vnd.ms-powerpoint' => 'ppt',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
         ];
 
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
@@ -119,6 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
                     )
                 );
             }
+            (new LogRepository())->logFileUpload($result === 'uploaded', (string) $user_id);
             if ($result === 'uploaded') {
                 $message = t('file_uploaded');
             } elseif ($result === 'flagged') {
@@ -129,9 +137,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
                 $error = t('file_save_error');
             }
         } else {
+            (new LogRepository())->logFileUpload(false, (string) $user_id);
             $error = t('file_type_error');
         }
     } else {
+        (new LogRepository())->logFileUpload(false, (string) $user_id);
         $error = t('file_upload_error');
     }
 }
@@ -252,7 +262,7 @@ if (!$my_pending_files) {
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label"><?= t('select_file') ?></label>
-                        <input type="file" class="form-control" name="file_upload" id="uploadFileInput" required accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*,video/*">
+                        <input type="file" class="form-control" name="file_upload" id="uploadFileInput" required accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.mp4,.webm">
                         <div class="form-text"><?= t('formats') ?></div>
                     </div>
                     <div class="mb-3">
@@ -288,6 +298,11 @@ if (!$my_pending_files) {
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
     }[char]));
+    const decodeHtmlEntities = value => {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = String(value ?? '');
+        return textarea.value;
+    };
 
     const announcementElement = document.querySelector('#announcement');
     const studentAnnouncementElement = document.querySelector('#studentAnnouncement');
@@ -374,7 +389,7 @@ if (!$my_pending_files) {
 
                 document.querySelector('#folderTable tbody').innerHTML = rows.join('');
                 document.querySelector('#folderHeaderLabel').textContent =
-                    currentFolder ? currentFolder.name : labels.root;
+                    currentFolder ? decodeHtmlEntities(currentFolder.name) : labels.root;
             })
             .catch(error => console.error(labels.error, error));
     }
