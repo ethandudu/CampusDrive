@@ -59,7 +59,7 @@ CREATE TABLE files (
     promotion_id UUID NOT NULL,
     original_name VARCHAR(255) NOT NULL,
     file_path VARCHAR(255) NOT NULL,
-    file_type VARCHAR(50) NOT NULL,
+    file_type VARCHAR(255) NOT NULL,
     folder_id UUID DEFAULT NULL,
     status ENUM('pending', 'approved') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

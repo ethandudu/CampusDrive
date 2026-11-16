@@ -87,6 +87,8 @@ BEGIN
         END IF;
         ALTER TABLE logs
             ADD CONSTRAINT logs_user_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+        ALTER TABLE files
+            MODIFY COLUMN file_type VARCHAR(255) NOT NULL;
         UPDATE settings
         SET value = '2'
         WHERE setting_key = 'db_version';
