@@ -3,10 +3,10 @@ services:
     image: mariadb:12
     container_name: campusdrive_mariadb
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: campusdrive
-      MYSQL_USER: campususer
-      MYSQL_PASSWORD: campuspassword
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?Set MYSQL_DATABASE in .env}
+      MYSQL_USER: ${MYSQL_USER:?Set MYSQL_USER in .env}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
     restart: unless-stopped
     volumes:
       - mariadb_data:/var/lib/mysql
@@ -25,11 +25,25 @@ services:
     depends_on:
       - mariadb
     environment:
-      MYSQL_HOST: mariadb
-      MYSQL_DATABASE: campusdrive
-      MYSQL_USER: campususer
-      MYSQL_PASSWORD: campuspassword
-      APP_BASE_URL: https://campusdrive.fr
+      MYSQL_HOST: ${MYSQL_HOST:-mariadb}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?Set MYSQL_DATABASE in .env}
+      MYSQL_USER: ${MYSQL_USER:?Set MYSQL_USER in .env}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+      MAIL_HOST: ${MAIL_HOST:?Set MAIL_HOST in .env}
+      MAIL_USERNAME: ${MAIL_USERNAME:?Set MAIL_USERNAME in .env}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?Set MAIL_PASSWORD in .env}
+      MAIL_FROM: ${MAIL_FROM:?Set MAIL_FROM in .env}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-CampusDrive}
+      APP_BASE_URL: ${APP_BASE_URL:-https://campusdrive.fr}
+      UNIVERSITY_EMAIL_DOMAINS: ${UNIVERSITY_EMAIL_DOMAINS:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      UPLOAD_DIR: ${UPLOAD_DIR:-}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
+      BEHIND_CLOUDFLARE: ${BEHIND_CLOUDFLARE:-}
+      CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+      CLAMAV_PORT: ${CLAMAV_PORT:-3310}
+      CLAMAV_TIMEOUT: ${CLAMAV_TIMEOUT:-45}
     restart: unless-stopped
     networks:
         - campusdrive_network
