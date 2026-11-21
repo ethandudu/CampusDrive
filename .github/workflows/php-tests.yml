@@ -52,6 +52,18 @@ jobs:
       DB_NAME: campusdrive_test
       DB_USER: campususer
       DB_PASSWORD: campuspassword
+      # Read by app/utils/config.php (normally set from .env by docker-compose.yaml)
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_DATABASE: campusdrive_test
+      MYSQL_USER: campususer
+      MYSQL_PASSWORD: campuspassword
+      MAIL_HOST: localhost
+      MAIL_USERNAME: test@example.com
+      MAIL_PASSWORD: test
+      MAIL_FROM: test@example.com
+      MAIL_FROM_NAME: CampusDrive Test
+      APP_BASE_URL: http://localhost
+      UNIVERSITY_EMAIL_DOMAINS: example.com
 
     steps:
       - name: Checkout
