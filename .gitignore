@@ -6,3 +6,5 @@ app/.maintenance
 app/.phpunit.cache
 app/assets/vendor
 .env
+app/cgu.php
+app/privacy.php
