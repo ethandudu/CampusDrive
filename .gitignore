@@ -5,3 +5,4 @@ vendor
 app/utils/config.php
 app/.maintenance
 app/.phpunit.cache
+app/assets/vendor

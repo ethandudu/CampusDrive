@@ -159,7 +159,7 @@ if (!$my_pending_files) {
 <head>
     <meta charset="UTF-8">
     <title><?= t('student_area') ?> - CampusDrive</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="assets/favicon.ico">
 </head>
 <body class="bg-light">
@@ -279,7 +279,7 @@ if (!$my_pending_files) {
         </div>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script>
     const locale = <?= json_encode(locale()) ?>;
     const folderStorageKey = <?= json_encode('student_current_folder_' . $promo_id, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;

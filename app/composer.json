@@ -7,6 +7,7 @@
     "require": {
         "php": ">=8.5",
         "phpmailer/phpmailer": "^7.1",
+        "twbs/bootstrap": "5.3.8",
         "ext-fileinfo": "*",
         "ext-pdo": "*",
         "ext-mbstring": "*"
@@ -31,6 +32,9 @@
         "phpunit/phpunit": "^11"
     },
     "scripts": {
+        "publish-assets": "@php scripts/publish-assets.php",
+        "post-install-cmd": "@publish-assets",
+        "post-update-cmd": "@publish-assets",
         "test": "phpunit"
     }
 }

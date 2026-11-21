@@ -104,7 +104,7 @@ $copy = locale() === 'en'
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="<?= htmlspecialchars($copy['description'], ENT_QUOTES, 'UTF-8') ?>">
     <title><?= htmlspecialchars($copy['title'], ENT_QUOTES, 'UTF-8') ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/site.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="assets/favicon.ico">
 </head>

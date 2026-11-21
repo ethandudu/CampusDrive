@@ -94,7 +94,7 @@ function adminPromotionEscape(string $value): string { return htmlspecialchars($
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= t('manage_promotions') ?> - CampusDrive</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="assets/favicon.ico">
 </head>
 <body class="bg-light">
@@ -203,6 +203,6 @@ function adminPromotionEscape(string $value): string { return htmlspecialchars($
         </form></div>
     </div>
 <?php endforeach; ?>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -74,7 +74,7 @@ $promotions = $promotionRepository->getPendingPromotions();
 <head>
     <meta charset="UTF-8">
     <title><?= t('administration') ?> - CampusDrive</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="assets/favicon.ico">
 </head>
 <body class="bg-light">
@@ -181,6 +181,6 @@ $promotions = $promotionRepository->getPendingPromotions();
         </div>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

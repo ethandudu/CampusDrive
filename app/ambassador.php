@@ -172,7 +172,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
 <head>
     <meta charset="UTF-8">
     <title><?= t('ambassador_area') ?> - CampusDrive</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="assets/favicon.ico">
 </head>
 <body class="bg-light">
@@ -438,7 +438,7 @@ $invitations = $invitationRepository->getPromotionInvitations($_SESSION['promoti
         </div>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script>
     const locale = <?= json_encode(locale()) ?>;
     const labels = <?= json_encode([
